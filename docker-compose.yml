@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./sprint-llm-distilled-20250324-040451:/app/sprint-llm-distilled-20250324-040451
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - MODEL_PATH=./sprint-llm-distilled-20250324-040451
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    command: python run_api.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    command: npm run dev
+    
+  # Optional service for model monitoring
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    volumes:
+      - ./logs:/logs
+    ports:
+      - "6006:6006"
+    command: tensorboard --logdir=/logs
+    depends_on:
+      - backend
