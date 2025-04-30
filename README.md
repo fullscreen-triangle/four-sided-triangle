@@ -59,7 +59,74 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - **Refinement Loop Handling**: Generates specialized prompts when output quality falls below thresholds
 - **A/B Testing Support**: Allows for systematic improvement of prompt strategies
 
-### 2. Eight-Stage Specialized Pipeline: Processing Depth and Breadth
+### 2. Advanced Core Components
+
+The system implements several specialized core components inspired by biological and cognitive systems, providing sophisticated resource management and processing capabilities:
+
+#### Glycolytic Query Investment Cycle (GQIC)
+
+**Purpose**: Optimizes resource allocation based on expected information yield using a metabolic-inspired approach.
+
+**Why It's Necessary**: Computational resources are limited, and different query components have varying information value. GQIC ensures optimal allocation of resources to maximize overall information gain.
+
+**Key Capabilities**:
+- **Three-Phase Cycle**: Follows a biochemically-inspired cycle:
+  - **Initiation**: Identifies potential information sources and establishes resource requirements
+  - **Investment**: Allocates computational resources based on expected return-on-investment
+  - **Payoff**: Harvests results and measures actual information gain
+- **Adaptive Learning**: Tracks historical ROI to improve future allocations
+- **Information Density Optimization**: Prioritizes high-information-yield components
+- **Multi-Factor Resource Allocation**: Considers complexity, domain specificity, and completion criteria
+
+**Implementation Details**:
+- Information gain calculation based on query characteristics and domain
+- ROI-based resource allocation with minimum thresholds for all components
+- Actual information content measurement for results, with content-type-specific metrics
+- Historical performance tracking for continuous improvement
+
+#### Metacognitive Task Partitioning (MTP)
+
+**Purpose**: Breaks complex queries into optimally sized sub-tasks using self-interrogative principles.
+
+**Why It's Necessary**: Complex queries often contain multiple inter-related sub-problems that are best processed separately before integration. MTP provides sophisticated decomposition capabilities essential for handling multi-faceted problems.
+
+**Key Capabilities**:
+- **Knowledge Domain Identification**: Classifies query components by relevant knowledge domains
+- **Domain-Specific Task Identification**: Extracts specific tasks within each domain
+- **Parameter Extraction**: Automatically extracts key parameters from natural language
+- **Dependency Modeling**: Establishes relationships between sub-tasks for optimal execution order
+- **Completion Criteria Definition**: Creates clear success criteria for each sub-task
+
+**Implementation Details**:
+- Four-phase decomposition process for comprehensive query understanding
+- Domain-specific keyword and entity analysis for accurate classification
+- Template-based sub-query formulation with parameter inference
+- Dependency graph construction for coordinated execution
+
+#### Adversarial Throttle Detection and Bypass (ATDB)
+
+**Purpose**: Detects and overcomes throttling mechanisms in LLMs that limit their capabilities.
+
+**Why It's Necessary**: Commercial LLMs often implement throttling mechanisms that restrict their output quality, especially for complex or specialized queries. ATDB ensures consistent high-quality responses even when facing such limitations.
+
+**Key Capabilities**:
+- **Throttle Pattern Recognition**: Identifies token limitation, depth limitation, and computation limitation patterns
+- **Information Density Analysis**: Measures response quality relative to expected information content
+- **Strategy Selection**: Chooses optimal bypass strategies based on historical effectiveness
+- **Dynamic Adaptation**: Learns from bypass attempt outcomes to improve future strategy selection
+
+**Bypass Strategies**:
+- **Token Limitation**: Query partitioning, progressive disclosure, targeted extraction
+- **Depth Limitation**: Query reframing, expert persona adoption, component assembly
+- **Computation Limitation**: Step-by-step instruction, verification approaches, equation transformation
+
+**Implementation Details**:
+- Multi-dimensional throttle detection using linguistic and information-theoretic signals
+- Adaptive strategy selection based on pattern type and historical performance
+- Domain-specific bypass strategy customization for specialized fields
+- Performance tracking for continuous improvement of bypass effectiveness
+
+### 3. Eight-Stage Specialized Pipeline: Processing Depth and Breadth
 
 **Why It's Necessary**: Complex domain knowledge extraction requires multiple specialized processing steps that standard end-to-end approaches cannot adequately perform. Each stage in this pipeline addresses a specific aspect of the knowledge extraction and reasoning challenge, allowing for specialization while maintaining a coherent overall process.
 
@@ -74,6 +141,11 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Constraint identification to understand processing boundaries
 - Query reformulation to resolve ambiguities while preserving original intent
 
+**Specialized Models**:
+- **Phi-3-mini (microsoft/Phi-3-mini-4k-instruct)**: A 3.8B parameter model optimized for structured output tasks. Its lightweight nature makes it CPU-friendly for forking private copies per session without saturating GPUs, while delivering excellent instruction-following capability for key-value extraction.
+- **Mixtral (mistralai/Mixtral-8x22B-Instruct-v0.1)**: A sparsely-activated Mixture of Experts model providing GPT-4-class quality for handling ill-posed user queries with complex transformations, deployed behind timeout guards.
+- **SciBERT (allenai/scibert_scivocab_uncased)**: Specialized for biomedical and sport-science vocabulary, providing robust Named Entity Recognition (NER) and slot filling to extract domain-specific entities.
+
 #### Stage 1: Semantic ATDB (Advanced Throttle Detection and Bypass)
 **Purpose**: Performs semantic transformation of structured queries and detects potential throttling issues.
 
@@ -84,6 +156,9 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Reranking of transformation approaches based on effectiveness
 - Semantic enhancement of queries for improved downstream processing
 - Throttle detection and bypass strategies for uninterrupted operation
+
+**Specialized Models**:
+- **BGE Reranker (BAAI/bge-reranker-base)**: A cross-encoder that outputs a single relevance score, used to select the most effective transformation strategy when multiple approaches are available.
 
 #### Stage 2: Domain Knowledge Extraction
 **Purpose**: Extracts and organizes domain-specific knowledge relevant to the query.
@@ -96,6 +171,11 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Knowledge prioritization based on relevance to the current query
 - Confidence scoring for retrieved knowledge elements
 
+**Specialized Models**:
+- **BioMedLM (stanford-crfm/BioMedLM-2.7B)**: A model trained on PubMed specifically for biomechanics and physiology, small enough for efficient LoRA and PEFT fine-tuning on specialized corpora. Serves as the base for the Scientific-Sprint-LLM.
+- **Mixtral (mistralai/Mixtral-8x22B-Instruct-v0.1)**: Provides comprehensive general sports statistics and reasoning capabilities, with access to Olympic data. Deployed behind GPU quota controls.
+- **Phi-3-mini (microsoft/Phi-3-mini-4k-instruct)**: Acts as a lightweight fallback option for low-latency paths or CPU-only deployments.
+
 #### Stage 3: Parallel Reasoning
 **Purpose**: Applies mathematical and logical reasoning to the problem space.
 
@@ -106,6 +186,11 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Parameter optimization within multi-dimensional spaces
 - Relationship discovery between variables and constraints
 - Generation of mathematical proof structures for solution validation
+
+**Specialized Models**:
+- **Qwen (Qwen/Qwen-2-7B-Instruct)**: Specialized for mathematical and gradient-style reasoning, with strong capabilities for equation manipulation and multi-objective solver tasks.
+- **DeepSeek Math (deepseek-ai/deepseek-math-7b-rl)**: An alternative math reasoning model optimized for symbolic mathematics and complex equation solving.
+- **Phi-3-mini (microsoft/Phi-3-mini-4k-instruct)**: Configured with "let's think" prompt engineering for fast internal chain-of-thought reasoning, achieving sub-900ms latency on A100 GPUs.
 
 #### Stage 4: Solution Generation
 **Purpose**: Produces candidate solutions based on reasoning outputs.
@@ -118,6 +203,12 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Constraint enforcement to ensure practical viability
 - Information-theoretic optimization of solution structures
 
+**Specialized Models**:
+- Multiple models are sampled with different temperatures to generate diverse solution candidates:
+  - **Phi-3-mini**: Used with temperature 0.7 for creative variants
+  - **Mixtral**: Used with temperature 0.3 for more focused solutions
+  - **BioMedLM**: Used with temperature 0.9 for domain-specific exploratory solutions
+
 #### Stage 5: Response Scoring
 **Purpose**: Evaluates candidate solutions using sophisticated quality metrics.
 
@@ -128,6 +219,9 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Reward model application based on human preference data
 - Bayesian evaluation frameworks for robust assessment
 - Comparative analysis across solution candidates
+
+**Specialized Models**:
+- **OpenAssistant Reward Model (OpenAssistant/reward-model-deberta-v3-large-v2)**: Trained on human-preference pairs, this model outputs scalar rewards that can be treated as P(R|Q) in Bayesian evaluation formulas.
 
 #### Stage 6: Ensemble Diversification
 **Purpose**: Creates a diverse set of high-quality solutions to present multiple perspectives.
@@ -140,6 +234,9 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Ensemble creation with complementary solution characteristics
 - Coverage analysis of the overall solution space
 
+**Specialized Models**:
+- **BGE Reranker M3 (BAAI/bge-reranker-v2-m3)**: A cross-encoder used to compute pairwise diversity and quality scores for candidate solutions, which are then processed through a determinantal point process (DPP) to select a diverse, high-quality subset.
+
 #### Stage 7: Threshold Verification
 **Purpose**: Performs final verification of solutions against quality standards.
 
@@ -151,7 +248,10 @@ Enables sophisticated model interactions by dynamically creating context-aware p
 - Compliance verification with explicit and implicit constraints
 - Final quality certification based on comprehensive criteria
 
-### 3. Dependency Injection Architecture: Flexibility and Testability
+**Specialized Models**:
+- **BART-MNLI (facebook/bart-large-mnli)**: Performs quick entailment testing to verify that candidate answers logically follow from domain facts stored in working memory.
+
+### 4. Dependency Injection Architecture: Flexibility and Testability
 
 **Why It's Necessary**: Traditional monolithic architectures become unmaintainable as system complexity grows. A dependency injection approach allows for modular development, testing, and extension of the system without disrupting existing functionality.
 
@@ -181,7 +281,7 @@ Provides foundation classes that implement common functionality:
 - Capability registration and discovery
 - Caching and optimization behaviors
 
-### 4. Hybrid Optimization System: Combining LLM and Traditional Approaches
+### 5. Hybrid Optimization System: Combining LLM and Traditional Approaches
 
 **Why It's Necessary**: Neither LLM-based approaches nor traditional mathematical solvers alone can effectively address the full spectrum of optimization problems. A hybrid approach leverages the strengths of each method while mitigating their respective weaknesses.
 
