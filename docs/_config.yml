@@ -1,0 +1,63 @@
+title: Four Sided Triangle
+description: A Sophisticated Multi-Model Optimization Pipeline for Domain-Expert Knowledge Extraction
+theme: jekyll-theme-cayman
+
+# Navigation structure based on actual components
+nav:
+  - title: Home
+    url: /
+  - title: Architecture
+    url: /architecture
+    subitems:
+      - title: Overview
+        url: /architecture#overview
+      - title: Metacognitive Orchestrator
+        url: /architecture#metacognitive-orchestrator
+      - title: Pipeline Stages
+        url: /architecture#pipeline-stages
+  - title: Pipeline Stages
+    url: /pipeline
+    subitems:
+      - title: Query Processing
+        url: /stages/query-processing
+      - title: Semantic ATDB
+        url: /stages/semantic-atdb
+      - title: Domain Knowledge
+        url: /stages/domain-knowledge
+      - title: Reasoning Optimization
+        url: /stages/reasoning-optimization
+      - title: Solution Generation
+        url: /stages/solution-generation
+      - title: Response Scoring
+        url: /stages/response-scoring
+      - title: Response Comparison
+        url: /stages/response-comparison
+      - title: Threshold Verification
+        url: /stages/threshold-verification
+  - title: API Reference
+    url: /api-reference
+  - title: Contributing
+    url: /contributing
+
+# Build settings
+markdown: kramdown
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .git
+  - .github
+  - system.tex
+  - system.pdf
+  - system.log
+  - system.aux
+  - system.fdb_latexmk
+  - system.fls
+  - system.out
+  - system.synctex.gz 
