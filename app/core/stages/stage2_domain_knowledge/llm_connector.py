@@ -8,6 +8,7 @@ domain-expert language models for knowledge extraction.
 import logging
 import json
 from typing import Dict, Any, Optional, List
+from app.core.model import get_model_instance
 
 class LLMConnector:
     """
@@ -27,28 +28,38 @@ class LLMConnector:
         self.logger = logging.getLogger(__name__)
         self.config = config or {}
         
+        # Get the multi-model system instance
+        self.model_system = get_model_instance()
+        
         # Domain-expert model configurations
         self.model_configs = self.config.get("model_configs", {})
         
-        # Default configurations
+        # Default configurations for domain expertise
         self.default_model_config = {
-            "temperature": 0.2,
+            "temperature": 0.1,  # Lower for more focused domain knowledge
             "max_tokens": 2000,
-            "top_p": 0.9,
-            "frequency_penalty": 0.0,
-            "presence_penalty": 0.0
+            "top_p": 0.9
         }
         
-        # Model endpoints
-        self.model_endpoints = {
-            "medical": self.config.get("medical_model_endpoint", "sprint-llm-distilled-medical"),
-            "financial": self.config.get("financial_model_endpoint", "sprint-llm-distilled-financial"),
-            "technical": self.config.get("technical_model_endpoint", "sprint-llm-distilled-technical"),
-            "scientific": self.config.get("scientific_model_endpoint", "sprint-llm-distilled-scientific"),
-            "general": self.config.get("general_model_endpoint", "sprint-llm-distilled-general")
+        # Domain-specific model mappings to available models
+        self.domain_model_mapping = {
+            "medical": "phi3",  # Use instruction model for medical precision
+            "financial": "phi3",  # Use instruction model for financial analysis
+            "technical": "phi3",  # Use instruction model for technical details
+            "scientific": "phi3",  # Use instruction model for scientific accuracy
+            "sprint": "phi3",  # Primary domain - sprint running expertise
+            "biomechanics": "phi3",  # Sprint biomechanics
+            "athletic_performance": "phi3",  # Athletic performance optimization
+            "general": "distilgpt2",  # Use generative model for general queries
+            "creative": "distilgpt2"  # Use generative model for creative tasks
         }
         
-        self.logger.info("LLM Connector initialized")
+        # Embedding model for semantic similarity and retrieval
+        self.use_embeddings = hasattr(self.model_system, 'embedding_model') and self.model_system.embedding_model
+        
+        self.logger.info(f"LLM Connector initialized with models: {list(self.model_system.models.keys())}")
+        if self.use_embeddings:
+            self.logger.info("✓ Embedding model available for semantic retrieval")
     
     async def query_domain_expert(self, domain: str, prompt: str, 
                                  model_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -65,27 +76,33 @@ class LLMConnector:
         """
         self.logger.info(f"Querying {domain} domain expert model")
         
-        # Get the model endpoint
-        model_endpoint = self.model_endpoints.get(domain)
-        if not model_endpoint:
-            self.logger.warning(f"No model endpoint configured for domain {domain}, using general model")
-            model_endpoint = self.model_endpoints["general"]
+        # Get the appropriate model for this domain
+        model_name = self.domain_model_mapping.get(domain, "phi3")
+        if model_name not in self.model_system.models:
+            self.logger.warning(f"Model {model_name} not available for domain {domain}, falling back to available model")
+            available_models = list(self.model_system.models.keys())
+            model_name = available_models[0] if available_models else None
+            
+        if not model_name:
+            raise Exception("No models available for domain expert queries")
         
         # Merge model parameters
         merged_params = self._merge_model_params(domain, model_params)
         
-        # Format the prompt for the specific model
-        formatted_prompt = self._format_prompt_for_model(domain, prompt)
+        # Format the prompt for domain expertise
+        formatted_prompt = self._format_domain_expert_prompt(domain, prompt)
         
         try:
-            # In a real implementation, this would make an API call to the LLM
-            # This is a mock implementation that returns a structured response
-            response = await self._mock_domain_expert_call(domain, formatted_prompt, merged_params)
+            # Use the multi-model system to generate response
+            response, metadata = self.model_system.generate_response(
+                formatted_prompt, 
+                parameters=merged_params
+            )
             
-            # Parse and validate the response
-            parsed_response = self._parse_response(response)
+            # Parse and structure the response for domain knowledge extraction
+            parsed_response = self._parse_domain_response(response, domain, metadata)
             
-            self.logger.info(f"Successfully queried {domain} domain expert model")
+            self.logger.info(f"Successfully queried {domain} domain expert using {metadata['model']}")
             return parsed_response
             
         except Exception as e:

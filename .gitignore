@@ -47,11 +47,12 @@ venv.bak/
 *.pickle
 *.model
 *.joblib
-sprint-llm-distilled-20250324-040451/
+# Old model reference removed - now using models/ directory
 checkpoint*/
 data/raw/
 data/processed/
 models/
+sprint-llm-distilled-20250324-040451/
 
 # Logs and databases
 *.log

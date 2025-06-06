@@ -1,23 +1,75 @@
+# Site settings
 title: Four Sided Triangle
-description: A Sophisticated Multi-Model Optimization Pipeline for Domain-Expert Knowledge Extraction
+description: >-
+  A sophisticated multi-model optimization pipeline designed to overcome the limitations 
+  of traditional RAG systems when dealing with complex domain-expert knowledge extraction.
+  
+baseurl: ""
+url: "https://your-username.github.io/four-sided-triangle"
+
+# Author information
+author:
+  name: Four Sided Triangle Team
+  email: contact@example.com
+
+# Repository information
+repository: your-username/four-sided-triangle
+
+# Theme
 theme: jekyll-theme-cayman
 
+# Markdown processing
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# Highlighter
+highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-paginate
+
+# SEO settings
+lang: en
+twitter:
+  username: four_sided_triangle
+  card: summary_large_image
+
 # Navigation structure based on actual components
-nav:
+collections:
+  stages:
+    output: true
+    permalink: /:collection/:name/
+  adr:
+    output: true
+    permalink: /:collection/:name/
+
+# Navigation menu
+navigation:
   - title: Home
     url: /
+  - title: Getting Started
+    url: /getting-started
   - title: Architecture
     url: /architecture
-    subitems:
-      - title: Overview
-        url: /architecture#overview
-      - title: Metacognitive Orchestrator
-        url: /architecture#metacognitive-orchestrator
-      - title: Pipeline Stages
-        url: /architecture#pipeline-stages
+    dropdown:
+      - title: System Overview
+        url: /architecture
+      - title: Pipeline Architecture
+        url: /pipeline
+      - title: Core Components
+        url: /core-processing
+      - title: Models Overview
+        url: /models
   - title: Pipeline Stages
     url: /pipeline
-    subitems:
+    dropdown:
       - title: Query Processing
         url: /stages/query-processing
       - title: Semantic ATDB
@@ -36,14 +88,28 @@ nav:
         url: /stages/threshold-verification
   - title: API Reference
     url: /api-reference
-  - title: Contributing
+  - title: Development
     url: /contributing
+    dropdown:
+      - title: Contributing
+        url: /contributing
+      - title: Architecture Decisions
+        url: /adr/
+      - title: Frontend Development
+        url: /frontend-development
 
 # Build settings
-markdown: kramdown
-plugins:
-  - jekyll-feed
-  - jekyll-seo-tag
+safe: true
+source: .
+destination: ./_site
+incremental: false
+keep_files:
+  - .git
+  - .svn
+
+# Pagination
+paginate: 10
+paginate_path: "/page:num/"
 
 # Exclude files from processing
 exclude:
@@ -53,6 +119,9 @@ exclude:
   - vendor
   - .git
   - .github
+  - .sass-cache
+  - .jekyll-cache
+  - gemfiles
   - system.tex
   - system.pdf
   - system.log
@@ -60,4 +129,34 @@ exclude:
   - system.fdb_latexmk
   - system.fls
   - system.out
-  - system.synctex.gz 
+  - system.synctex.gz
+  - README.md
+
+# Include files in processing
+include:
+  - _pages
+
+# Default settings for posts and pages
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "stages"
+    values:
+      layout: "default"
+      parent: "Pipeline Stages"
+  - scope:
+      path: ""
+      type: "adr"
+    values:
+      layout: "default"
+      parent: "Architecture Decision Records"
+
+# Custom variables
+version: "1.0.0"
+github_username: your-username
+linkedin_username: four-sided-triangle 

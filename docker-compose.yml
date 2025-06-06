@@ -9,11 +9,11 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-      - ./sprint-llm-distilled-20250324-040451:/app/sprint-llm-distilled-20250324-040451
+      - ./models:/app/models
     environment:
       - PORT=8000
       - HOST=0.0.0.0
-      - MODEL_PATH=./sprint-llm-distilled-20250324-040451
+      - MODEL_PATH=./models
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     command: python run_api.py

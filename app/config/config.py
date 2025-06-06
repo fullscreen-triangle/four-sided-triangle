@@ -5,7 +5,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Model settings
-MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(BASE_DIR, "sprint-llm-distilled-20250324-040451"))
+MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(BASE_DIR, "models"))
 
 # API settings
 API_PORT = 8000

@@ -21,7 +21,7 @@ echo "Installing backend dependencies..."
 pip install -r requirements.txt
 
 # Verify LLM model path
-MODEL_PATH=${MODEL_PATH:-./sprint-llm-distilled-20250324-040451}
+MODEL_PATH=${MODEL_PATH:-./models}
 if [ ! -d "$MODEL_PATH" ]; then
     echo "Warning: Model directory not found at $MODEL_PATH"
     echo "Please make sure the sprint-llm-distilled model is correctly installed"
