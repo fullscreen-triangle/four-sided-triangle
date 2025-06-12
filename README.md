@@ -161,17 +161,33 @@ The system implements several specialized core components inspired by biological
 - **BGE Reranker (BAAI/bge-reranker-base)**: A cross-encoder that outputs a single relevance score, used to select the most effective transformation strategy when multiple approaches are available.
 
 #### Stage 2: Domain Knowledge Extraction
-**Purpose**: Extracts and organizes domain-specific knowledge relevant to the query.
+**Purpose**: Extracts and organizes domain-specific knowledge relevant to the query using dual expert model architecture.
 
-**Why It's Necessary**: Generic knowledge bases lack the specialized information needed for expert-level responses. This stage provides targeted access to domain-specific knowledge, significantly enhancing response quality in specialized fields.
+**Why It's Necessary**: Generic knowledge bases lack the specialized information needed for expert-level responses. This stage provides targeted access to domain-specific knowledge through multiple complementary expert models, significantly enhancing response quality and technical depth in specialized fields.
 
 **Key Capabilities**:
-- Specialized model selection based on domain requirements
-- Domain-specific fine-tuning through LoRA and other adaptation techniques
-- Knowledge prioritization based on relevance to the current query
-- Confidence scoring for retrieved knowledge elements
+- **Dual-Model Architecture**: Simultaneous querying of primary and secondary domain expert models
+- **Multi-Model Fusion**: Intelligent combination of insights from complementary expert models
+- **Consensus Detection**: Identification of validated insights where multiple experts agree
+- **Specialized model selection based on domain requirements
+- **Domain-specific fine-tuning through LoRA and other adaptation techniques
+- **Knowledge prioritization based on relevance to the current query
+- **Confidence scoring and consensus validation for extracted knowledge elements
+
+**Dual-Model Expert Architecture**:
+- **Primary Domain Expert**: General sprint knowledge, training methodology, and performance optimization
+- **Secondary Domain Expert**: Advanced biomechanical analysis, kinematic optimization, and technical refinements
+- **Multi-Model Fusion Engine**: Combines complementary insights while avoiding duplication
+- **Consensus Validation**: Boosts confidence when multiple experts agree on insights
 
 **Specialized Models**:
+- **Primary Sprint Expert**: Enhanced GPT-2 model via Ollama specialized for sprint training and performance
+- **Secondary Sprint Expert (sprint-llm-distilled-20250324-040451)**: PEFT-adapted model focused on advanced biomechanical analysis with specialized capabilities for:
+  - Advanced kinematic and kinetic analysis
+  - Ground reaction force optimization  
+  - Energy system transitions during 400m races
+  - Biomechanical efficiency optimization
+  - Race-specific tactical analysis
 - **BioMedLM (stanford-crfm/BioMedLM-2.7B)**: A model trained on PubMed specifically for biomechanics and physiology, small enough for efficient LoRA and PEFT fine-tuning on specialized corpora. Serves as the base for the Scientific-Sprint-LLM.
 - **Mixtral (mistralai/Mixtral-8x22B-Instruct-v0.1)**: Provides comprehensive general sports statistics and reasoning capabilities, with access to Olympic data. Deployed behind GPU quota controls.
 - **Phi-3-mini (microsoft/Phi-3-mini-4k-instruct)**: Acts as a lightweight fallback option for low-latency paths or CPU-only deployments.
