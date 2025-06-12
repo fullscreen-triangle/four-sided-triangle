@@ -53,29 +53,47 @@ class DomainKnowledgeService:
         Returns:
             Structured domain knowledge with confidence levels and relationships
         """
-        self.logger.info("Starting domain knowledge extraction process")
+        self.logger.info("Starting domain knowledge extraction process with dual-model querying")
         
         # Step 1: Analyze semantic representation to determine required domains
         required_domains = self._determine_required_domains(semantic_representation)
         self.logger.info(f"Required domains identified: {required_domains}")
         
-        # Step 2: Extract knowledge from each required domain
+        # Step 2: Extract knowledge from both primary and secondary domain experts
+        # This enables querying from two different base extreme domain LLMs
         raw_knowledge = {}
+        
+        # Extract from primary domain expert
         for domain in required_domains:
-            domain_knowledge = await self.knowledge_extractor.extract_knowledge(
+            primary_knowledge = await self.knowledge_extractor.extract_knowledge(
                 domain, 
                 semantic_representation, 
-                context
+                context,
+                model_preference="primary"  # Use primary sprint expert
             )
-            raw_knowledge[domain] = domain_knowledge
+            raw_knowledge[f"{domain}_primary"] = primary_knowledge
+        
+        # Extract from secondary domain expert for complementary insights
+        for domain in required_domains:
+            if domain in ["sprint", "biomechanics", "athletic_performance"]:  # Only for sprint-related domains
+                secondary_knowledge = await self.knowledge_extractor.extract_knowledge(
+                    domain, 
+                    semantic_representation, 
+                    context,
+                    model_preference="secondary"  # Use secondary distilled expert
+                )
+                raw_knowledge[f"{domain}_secondary"] = secondary_knowledge
+        
+        self.logger.info(f"Extracted knowledge from {len(raw_knowledge)} domain experts")
         
         # Step 3: Validate the extracted knowledge
         validated_knowledge = await self.knowledge_validator.validate(raw_knowledge, context)
         
-        # Step 4: Prioritize knowledge elements by relevance
+        # Step 4: Prioritize knowledge elements by relevance (includes multi-model fusion)
         prioritized_knowledge = await self.knowledge_prioritizer.prioritize(
             validated_knowledge, 
-            semantic_representation
+            semantic_representation,
+            enable_multi_model_fusion=True  # Enable fusion of insights from multiple experts
         )
         
         # Step 5: Structure the knowledge with relationships and dependencies
@@ -86,12 +104,14 @@ class DomainKnowledgeService:
             "domain_knowledge": structured_knowledge,
             "metadata": {
                 "domains": required_domains,
+                "models_used": self._get_models_used(raw_knowledge),
                 "extraction_metrics": self._calculate_extraction_metrics(structured_knowledge),
-                "confidence_summary": self._summarize_confidence(structured_knowledge)
+                "confidence_summary": self._summarize_confidence(structured_knowledge),
+                "dual_model_insights": self._analyze_dual_model_insights(raw_knowledge)
             }
         }
         
-        self.logger.info("Domain knowledge extraction completed successfully")
+        self.logger.info("Domain knowledge extraction completed successfully with dual-model insights")
         return result
     
     def _determine_required_domains(self, semantic_representation: Dict[str, Any]) -> List[str]:
@@ -271,4 +291,82 @@ class DomainKnowledgeService:
             "elements_below_threshold": sum(1 for c in element_confidences if c < 0.7),
             "formulas_below_threshold": sum(1 for c in formula_confidences if c < 0.7),
             "constraints_below_threshold": sum(1 for c in constraint_confidences if c < 0.7)
-        } 
+        }
+    
+    def _get_models_used(self, raw_knowledge: Dict[str, Any]) -> Dict[str, Any]:
+        """Get information about which models were used for knowledge extraction."""
+        models_used = {
+            "primary_experts": [],
+            "secondary_experts": [],
+            "total_models": 0
+        }
+        
+        for domain_key, knowledge in raw_knowledge.items():
+            if knowledge and "metadata" in knowledge:
+                model_info = {
+                    "domain": domain_key,
+                    "model_id": knowledge["metadata"].get("model_id"),
+                    "specialization": knowledge["metadata"].get("specialization"),
+                    "role": knowledge["metadata"].get("role", "primary")
+                }
+                
+                if "secondary" in domain_key or knowledge["metadata"].get("role") == "complementary_expert":
+                    models_used["secondary_experts"].append(model_info)
+                else:
+                    models_used["primary_experts"].append(model_info)
+                
+                models_used["total_models"] += 1
+        
+        return models_used
+    
+    def _analyze_dual_model_insights(self, raw_knowledge: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze insights from dual-model extraction."""
+        analysis = {
+            "complementary_insights": [],
+            "consensus_areas": [],
+            "divergent_perspectives": [],
+            "confidence_comparison": {}
+        }
+        
+        # Group primary and secondary insights by domain
+        domain_groups = {}
+        for domain_key, knowledge in raw_knowledge.items():
+            if "_primary" in domain_key:
+                base_domain = domain_key.replace("_primary", "")
+                if base_domain not in domain_groups:
+                    domain_groups[base_domain] = {}
+                domain_groups[base_domain]["primary"] = knowledge
+            elif "_secondary" in domain_key:
+                base_domain = domain_key.replace("_secondary", "")
+                if base_domain not in domain_groups:
+                    domain_groups[base_domain] = {}
+                domain_groups[base_domain]["secondary"] = knowledge
+        
+        # Compare insights between primary and secondary models
+        for domain, models in domain_groups.items():
+            if "primary" in models and "secondary" in models:
+                primary_knowledge = models["primary"]
+                secondary_knowledge = models["secondary"]
+                
+                # Compare confidence levels
+                primary_confidence = primary_knowledge.get("confidence", 0.0)
+                secondary_confidence = secondary_knowledge.get("confidence", 0.0)
+                
+                analysis["confidence_comparison"][domain] = {
+                    "primary": primary_confidence,
+                    "secondary": secondary_confidence,
+                    "difference": abs(primary_confidence - secondary_confidence)
+                }
+                
+                # Identify complementary insights (unique to secondary model)
+                if "elements" in secondary_knowledge:
+                    for element in secondary_knowledge["elements"]:
+                        if element.get("category") == "biomechanics" or "advanced" in element.get("type", ""):
+                            analysis["complementary_insights"].append({
+                                "domain": domain,
+                                "insight": element.get("content"),
+                                "confidence": element.get("confidence", 0.0),
+                                "type": element.get("type")
+                            })
+        
+        return analysis 

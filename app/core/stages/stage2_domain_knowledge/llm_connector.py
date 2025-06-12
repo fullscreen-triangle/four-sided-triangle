@@ -51,7 +51,12 @@ class LLMConnector:
             "biomechanics": "phi3",  # Sprint biomechanics
             "athletic_performance": "phi3",  # Athletic performance optimization
             "general": "distilgpt2",  # Use generative model for general queries
-            "creative": "distilgpt2"  # Use generative model for creative tasks
+            "creative": "distilgpt2",  # Use generative model for creative tasks
+            
+            # Secondary expert mappings for dual-model querying
+            "sprint_secondary": "sprint-llm-distilled",  # Secondary distilled expert
+            "biomechanics_secondary": "sprint-llm-distilled",  # Secondary for biomechanics
+            "athletic_performance_secondary": "sprint-llm-distilled"  # Secondary for performance
         }
         
         # Embedding model for semantic similarity and retrieval
@@ -134,29 +139,239 @@ class LLMConnector:
         
         return merged
     
-    def _format_prompt_for_model(self, domain: str, prompt: str) -> str:
+    def _format_domain_expert_prompt(self, domain: str, prompt: str) -> str:
         """
-        Format the prompt based on the specific requirements of the domain-expert model.
+        Format the prompt for domain expertise extraction.
         
         Args:
             domain: Domain identifier
             prompt: Original prompt
             
         Returns:
-            Formatted prompt for the specific model
+            Formatted prompt optimized for domain knowledge extraction
         """
-        # This is a simple implementation that could be expanded based on model requirements
+        # Domain-specific preambles for expert knowledge extraction
+        domain_preambles = {
+            "sprint": """You are an elite domain expert in 400m sprint running with deep knowledge of:
+- Biomechanical optimization and sprint technique
+- Training periodization and performance analytics
+- Physiological adaptations and energy systems
+- Race strategy and tactical decision-making
+- Equipment optimization and environmental factors""",
+            
+            "biomechanics": """You are a sports biomechanics expert specializing in sprint running with expertise in:
+- Kinematic and kinetic analysis of sprint mechanics
+- Ground reaction forces and power generation
+- Joint angles and movement optimization
+- Muscle activation patterns and coordination
+- Motion analysis and performance diagnostics""",
+            
+            "athletic_performance": """You are a performance optimization expert for elite sprinters with knowledge of:
+- Training load management and recovery protocols
+- Performance testing and monitoring systems
+- Nutritional strategies for power athletes
+- Psychological preparation and competitive readiness
+- Technology integration and data analytics""",
+            
+            "medical": """You are a sports medicine expert specializing in sprint athletes with knowledge of:
+- Exercise physiology and metabolic systems
+- Injury prevention and rehabilitation protocols
+- Performance-enhancing recovery methods
+- Physiological testing and health monitoring
+- Medical considerations for elite athletes""",
+            
+            "technical": """You are a technical expert in sprint training methodology with knowledge of:
+- Training equipment and technology applications
+- Data acquisition and analysis systems
+- Video analysis and technique correction
+- Performance measurement and monitoring tools
+- Technological innovations in sprint training"""
+        }
         
-        # Add domain-specific context preamble if configured
-        preamble = self.config.get(f"{domain}_preamble", "")
-        if preamble:
-            prompt = f"{preamble}\n\n{prompt}"
+        # Get domain-specific preamble
+        preamble = domain_preambles.get(domain, f"You are a domain expert in {domain}.")
         
-        # Add response format instructions if not already included
-        if "Format your response as a properly structured JSON object" not in prompt:
-            prompt += "\n\nFormat your response as a properly structured JSON object."
+        # Format the complete prompt with structured output requirements
+        formatted_prompt = f"""{preamble}
+
+{prompt}
+
+Provide your expert analysis in the following structured JSON format:
+{{
+    "elements": [
+        {{
+            "id": "unique_element_identifier",
+            "description": "Detailed description of the knowledge element",
+            "confidence": 0.95,
+            "category": "biomechanics|physiology|technique|training|equipment",
+            "formulas": [
+                {{
+                    "expression": "mathematical_formula",
+                    "description": "explanation_of_formula",
+                    "variables": {{"var1": "description", "var2": "description"}},
+                    "units": "appropriate_units",
+                    "confidence": 0.90
+                }}
+            ],
+            "constraints": [
+                {{
+                    "expression": "constraint_description",
+                    "type": "physiological|biomechanical|equipment|environmental",
+                    "confidence": 0.85
+                }}
+            ],
+            "reference_values": {{
+                "parameter_name": {{
+                    "value": "typical_value_or_range",
+                    "unit": "measurement_unit",
+                    "context": "elite_male|elite_female|recreational",
+                    "source": "research_basis"
+                }}
+            }},
+            "dependencies": ["related_element_ids"],
+            "applications": ["specific_use_cases"]
+        }}
+    ],
+    "metadata": {{
+        "domain": "{domain}",
+        "complexity_level": "basic|intermediate|advanced|expert",
+        "evidence_quality": "empirical|theoretical|observational",
+        "applicability": "universal|specific_conditions"
+    }}
+}}
+
+Ensure all numerical values, formulas, and constraints are scientifically accurate and properly cited."""
         
-        return prompt
+        return formatted_prompt
+    
+    def _parse_domain_response(self, response: str, domain: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Parse and structure the response from domain expert models.
+        
+        Args:
+            response: Raw response from the model
+            domain: Domain identifier
+            metadata: Generation metadata
+            
+        Returns:
+            Structured domain knowledge response
+        """
+        try:
+            # Try to parse as JSON if the model returned structured data
+            if response.strip().startswith('{') and response.strip().endswith('}'):
+                parsed_json = json.loads(response)
+                if "elements" in parsed_json:
+                    return parsed_json
+            
+            # If not structured JSON, extract knowledge elements from natural language
+            return self._extract_knowledge_from_text(response, domain, metadata)
+            
+        except json.JSONDecodeError:
+            # Fallback to text extraction
+            return self._extract_knowledge_from_text(response, domain, metadata)
+    
+    def _extract_knowledge_from_text(self, text: str, domain: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract structured knowledge elements from natural language response.
+        
+        Args:
+            text: Natural language response
+            domain: Domain identifier
+            metadata: Generation metadata
+            
+        Returns:
+            Structured knowledge elements
+        """
+        # This is a simplified extraction - in production you might use NER, regex patterns, etc.
+        elements = []
+        
+        # Split response into sentences/paragraphs for analysis
+        sentences = [s.strip() for s in text.split('.') if s.strip()]
+        
+        for i, sentence in enumerate(sentences):
+            if len(sentence) > 20:  # Filter out very short sentences
+                element = {
+                    "id": f"{domain}_extracted_{i+1}",
+                    "description": sentence,
+                    "confidence": 0.75,  # Lower confidence for extracted vs structured
+                    "category": self._categorize_content(sentence, domain),
+                    "formulas": self._extract_formulas(sentence),
+                    "constraints": [],
+                    "reference_values": {},
+                    "dependencies": [],
+                    "applications": []
+                }
+                elements.append(element)
+        
+        return {
+            "elements": elements,
+            "metadata": {
+                "domain": domain,
+                "extraction_method": "text_parsing",
+                "model_used": metadata.get("model", "unknown"),
+                "generation_time": metadata.get("generation_time", 0),
+                "complexity_level": "intermediate",
+                "evidence_quality": "model_generated",
+                "applicability": "general"
+            }
+        }
+    
+    def _categorize_content(self, content: str, domain: str) -> str:
+        """
+        Categorize content based on keywords and domain.
+        
+        Args:
+            content: Text content to categorize
+            domain: Domain context
+            
+        Returns:
+            Category classification
+        """
+        content_lower = content.lower()
+        
+        # Sprint-specific categorization
+        if any(word in content_lower for word in ['biomechanic', 'kinematic', 'force', 'angle', 'motion']):
+            return "biomechanics"
+        elif any(word in content_lower for word in ['physiolog', 'metabolic', 'oxygen', 'lactate', 'energy']):
+            return "physiology"
+        elif any(word in content_lower for word in ['technique', 'form', 'style', 'execution']):
+            return "technique"
+        elif any(word in content_lower for word in ['training', 'exercise', 'workout', 'program']):
+            return "training"
+        elif any(word in content_lower for word in ['equipment', 'technology', 'device', 'tool']):
+            return "equipment"
+        else:
+            return "general"
+    
+    def _extract_formulas(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Extract mathematical formulas from text.
+        
+        Args:
+            text: Text to search for formulas
+            
+        Returns:
+            List of extracted formulas
+        """
+        formulas = []
+        
+        # Simple regex patterns for common formula patterns
+        import re
+        
+        # Look for equations with = sign
+        equation_pattern = r'([A-Za-z_][A-Za-z0-9_]*\s*=\s*[^.]*)'
+        equations = re.findall(equation_pattern, text)
+        
+        for equation in equations:
+            formulas.append({
+                "expression": equation.strip(),
+                "description": f"Formula extracted from: {text[:50]}...",
+                "variables": {},
+                "units": "",
+                "confidence": 0.6
+            })
+        
+        return formulas
     
     async def _mock_domain_expert_call(self, domain: str, prompt: str, 
                                      params: Dict[str, Any]) -> str:
@@ -365,6 +580,26 @@ class LLMConnector:
                 }
             ]
         })
+    
+    def get_semantic_embeddings(self, texts: List[str]) -> Optional[List[List[float]]]:
+        """
+        Get semantic embeddings for knowledge similarity and retrieval.
+        
+        Args:
+            texts: List of texts to embed
+            
+        Returns:
+            List of embedding vectors, or None if embedding model unavailable
+        """
+        if not self.use_embeddings:
+            return None
+            
+        try:
+            embeddings = self.model_system.get_embeddings(texts)
+            return embeddings.tolist()
+        except Exception as e:
+            self.logger.error(f"Error generating embeddings: {e}")
+            return None
     
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """

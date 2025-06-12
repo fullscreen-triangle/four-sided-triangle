@@ -34,231 +34,278 @@ class KnowledgePrioritizer:
         self.logger.info("Knowledge Prioritizer initialized")
     
     async def prioritize(self, validated_knowledge: Dict[str, Any], 
-                        semantic_representation: Dict[str, Any]) -> Dict[str, Any]:
+                        semantic_representation: Dict[str, Any],
+                        enable_multi_model_fusion: bool = False) -> Dict[str, Any]:
         """
-        Prioritize knowledge elements based on relevance to the query.
+        Prioritize knowledge elements by relevance, confidence, and importance.
         
         Args:
-            validated_knowledge: Validated knowledge from the previous step
-            semantic_representation: The semantic representation from Stage 1
+            validated_knowledge: Validated knowledge from all domains
+            semantic_representation: Semantic representation for relevance scoring
+            enable_multi_model_fusion: Whether to enable fusion of insights from multiple models
             
         Returns:
-            Knowledge with prioritized elements
+            Prioritized and structured knowledge elements
         """
         self.logger.info("Starting knowledge prioritization process")
         
-        # Extract parameters from semantic representation for relevance scoring
-        query_parameters = semantic_representation.get("parameters", {})
-        query_intent = semantic_representation.get("intent", "")
-        
-        # Merge elements from all domains
+        # Extract all knowledge elements
         all_elements = []
-        for domain, domain_knowledge in validated_knowledge.items():
-            if isinstance(domain_knowledge, dict) and "elements" in domain_knowledge:
-                for element in domain_knowledge["elements"]:
-                    # Add domain identifier to each element
-                    element["domain"] = domain
+        for domain, knowledge in validated_knowledge.items():
+            if "elements" in knowledge:
+                for element in knowledge["elements"]:
+                    element["source_domain"] = domain
                     all_elements.append(element)
         
+        self.logger.info(f"Processing {len(all_elements)} knowledge elements for prioritization")
+        
+        # Perform multi-model fusion if enabled
+        if enable_multi_model_fusion:
+            all_elements = await self._perform_multi_model_fusion(all_elements)
+            self.logger.info(f"Multi-model fusion complete, {len(all_elements)} elements after fusion")
+        
         # Calculate relevance scores
-        elements_with_scores = self._calculate_relevance_scores(
-            all_elements, 
-            query_parameters, 
-            query_intent
-        )
+        for element in all_elements:
+            element["relevance_score"] = self._calculate_relevance(element, semantic_representation)
+        
+        # Calculate importance scores
+        for element in all_elements:
+            element["importance_score"] = self._calculate_importance(element)
+        
+        # Calculate composite priority scores
+        for element in all_elements:
+            element["priority_score"] = self._calculate_priority(element)
+        
+        # Sort by priority score (descending)
+        prioritized_elements = sorted(all_elements, key=lambda x: x["priority_score"], reverse=True)
+        
+        # Group elements by category for better organization
+        categorized_elements = self._categorize_elements(prioritized_elements)
         
         # Map dependencies between elements
-        elements_with_dependencies = self._map_dependencies(elements_with_scores)
+        dependency_map = self._map_dependencies(prioritized_elements)
         
-        # Sort elements by combined score (descending)
-        sorted_elements = sorted(
-            elements_with_dependencies, 
-            key=lambda x: x.get("combined_score", 0), 
-            reverse=True
-        )
+        # Calculate confidence distribution
+        confidence_distribution = self._calculate_confidence_distribution(prioritized_elements)
         
-        # Create result structure
         result = {
-            "elements": sorted_elements,
-            "metadata": {
-                "total_elements": len(sorted_elements),
-                "prioritization_metrics": {
-                    "relevance_weight": self.relevance_weight,
-                    "confidence_weight": self.confidence_weight,
-                    "specificity_weight": self.specificity_weight
-                }
+            "elements": prioritized_elements,
+            "categories": categorized_elements,
+            "dependencies": dependency_map,
+            "confidence_distribution": confidence_distribution,
+            "prioritization_metadata": {
+                "total_elements": len(prioritized_elements),
+                "multi_model_fusion_enabled": enable_multi_model_fusion,
+                "average_priority": sum(e["priority_score"] for e in prioritized_elements) / len(prioritized_elements) if prioritized_elements else 0.0,
+                "high_priority_count": sum(1 for e in prioritized_elements if e["priority_score"] > 0.8),
+                "low_priority_count": sum(1 for e in prioritized_elements if e["priority_score"] < 0.3)
             }
         }
         
-        self.logger.info("Knowledge prioritization completed")
+        self.logger.info(f"Knowledge prioritization completed: {len(prioritized_elements)} elements prioritized")
         return result
     
-    def _calculate_relevance_scores(self, elements: List[Dict[str, Any]], 
-                                  query_parameters: Dict[str, Any],
-                                  query_intent: str) -> List[Dict[str, Any]]:
+    async def _perform_multi_model_fusion(self, elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Calculate relevance scores for each knowledge element.
+        Perform fusion of insights from multiple domain expert models.
         
         Args:
-            elements: List of knowledge elements
-            query_parameters: Parameters extracted from the query
-            query_intent: Intent of the query
+            elements: List of knowledge elements from multiple models
             
         Returns:
-            Elements with added relevance scores
+            Fused and deduplicated knowledge elements
         """
-        scored_elements = []
+        self.logger.info("Performing multi-model fusion")
         
+        # Group elements by domain and model source
+        model_groups = {}
         for element in elements:
-            # Calculate relevance score based on how well the element matches the query
-            relevance_score = self._calculate_element_relevance(element, query_parameters, query_intent)
+            domain = element.get("source_domain", "unknown")
+            model_source = element.get("model_source", "primary")
             
-            # Get confidence score (if available) or default to 0.5
-            confidence_score = element.get("confidence", 0.5)
+            # Create base domain key (remove _primary/_secondary suffix)
+            base_domain = domain.replace("_primary", "").replace("_secondary", "")
             
-            # Calculate specificity score based on detail level of the element
-            specificity_score = self._calculate_element_specificity(element)
+            if base_domain not in model_groups:
+                model_groups[base_domain] = {"primary": [], "secondary": []}
             
-            # Calculate combined score using weighted sum
-            combined_score = (
-                relevance_score * self.relevance_weight +
-                confidence_score * self.confidence_weight +
-                specificity_score * self.specificity_weight
-            )
-            
-            # Add scores to the element
-            element_with_scores = element.copy()
-            element_with_scores["relevance_score"] = relevance_score
-            element_with_scores["specificity_score"] = specificity_score
-            element_with_scores["combined_score"] = combined_score
-            
-            scored_elements.append(element_with_scores)
+            if "secondary" in domain or model_source == "secondary":
+                model_groups[base_domain]["secondary"].append(element)
+            else:
+                model_groups[base_domain]["primary"].append(element)
         
-        return scored_elements
+        fused_elements = []
+        
+        # Process each domain group
+        for domain, models in model_groups.items():
+            primary_elements = models.get("primary", [])
+            secondary_elements = models.get("secondary", [])
+            
+            # Add all primary elements
+            fused_elements.extend(primary_elements)
+            
+            # Fuse secondary elements, avoiding duplicates
+            for secondary_element in secondary_elements:
+                if not self._is_duplicate_insight(secondary_element, primary_elements):
+                    # Mark as complementary insight
+                    secondary_element["fusion_type"] = "complementary"
+                    secondary_element["complements_primary"] = True
+                    fused_elements.append(secondary_element)
+                else:
+                    # Merge confidence scores for similar insights
+                    similar_primary = self._find_similar_element(secondary_element, primary_elements)
+                    if similar_primary:
+                        similar_primary["confidence"] = max(
+                            similar_primary.get("confidence", 0.0),
+                            secondary_element.get("confidence", 0.0)
+                        )
+                        similar_primary["multi_model_validated"] = True
+                        similar_primary["secondary_confidence"] = secondary_element.get("confidence", 0.0)
+        
+        # Identify consensus insights (validated by both models)
+        for element in fused_elements:
+            if element.get("multi_model_validated", False):
+                element["consensus_insight"] = True
+                element["confidence"] = min(element.get("confidence", 0.0) + 0.1, 1.0)  # Boost confidence for consensus
+        
+        return fused_elements
     
-    def _calculate_element_relevance(self, element: Dict[str, Any], 
-                                   query_parameters: Dict[str, Any],
-                                   query_intent: str) -> float:
+    def _is_duplicate_insight(self, element: Dict[str, Any], existing_elements: List[Dict[str, Any]]) -> bool:
+        """Check if an insight is a duplicate of existing elements."""
+        element_content = element.get("content", "").lower()
+        
+        for existing in existing_elements:
+            existing_content = existing.get("content", "").lower()
+            
+            # Simple similarity check (in production, would use more sophisticated methods)
+            if self._calculate_text_similarity(element_content, existing_content) > 0.7:
+                return True
+        
+        return False
+    
+    def _find_similar_element(self, element: Dict[str, Any], existing_elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Find the most similar element in existing elements."""
+        element_content = element.get("content", "").lower()
+        best_match = None
+        best_similarity = 0.0
+        
+        for existing in existing_elements:
+            existing_content = existing.get("content", "").lower()
+            similarity = self._calculate_text_similarity(element_content, existing_content)
+            
+            if similarity > best_similarity and similarity > 0.7:
+                best_similarity = similarity
+                best_match = existing
+        
+        return best_match
+    
+    def _calculate_text_similarity(self, text1: str, text2: str) -> float:
+        """Calculate simple text similarity score."""
+        # Simple word overlap similarity (in production, would use embeddings or other methods)
+        words1 = set(text1.split())
+        words2 = set(text2.split())
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        return intersection / union if union > 0 else 0.0
+    
+    def _calculate_relevance(self, element: Dict[str, Any], semantic_representation: Dict[str, Any]) -> float:
         """
-        Calculate how relevant an element is to the query.
+        Calculate relevance score for a knowledge element based on semantic representation.
         
         Args:
             element: Knowledge element
-            query_parameters: Parameters from the query
-            query_intent: Intent of the query
+            semantic_representation: Semantic representation for relevance scoring
             
         Returns:
             Relevance score (0.0-1.0)
         """
-        relevance_score = 0.0
-        max_score = 0.0
+        query_parameters = semantic_representation.get("parameters", {})
+        query_intent = semantic_representation.get("intent", "")
         
-        # Check if element description matches intent
-        if "description" in element and query_intent:
-            desc_lower = element["description"].lower()
-            intent_lower = query_intent.lower()
-            
-            # Simple keyword matching (could be replaced with more sophisticated semantic matching)
-            intent_keywords = intent_lower.split()
-            intent_matches = sum(1 for kw in intent_keywords if kw in desc_lower)
-            if intent_keywords:
-                intent_score = intent_matches / len(intent_keywords)
-                relevance_score += intent_score
-                max_score += 1.0
-        
-        # Check if element has formulas or reference values relevant to query parameters
-        if "reference_values" in element and query_parameters:
-            ref_values = element.get("reference_values", {})
-            param_matches = 0
-            
-            for param_name in query_parameters:
-                if param_name in ref_values:
-                    param_matches += 1
-            
-            if query_parameters:
-                param_score = param_matches / len(query_parameters)
-                relevance_score += param_score
-                max_score += 1.0
-        
-        # Check formulas for parameter matches
-        if "formulas" in element and query_parameters:
-            formulas = element.get("formulas", [])
-            formula_matches = 0
-            
-            for formula in formulas:
-                if "variables" in formula:
-                    for param_name in query_parameters:
-                        if param_name in formula["variables"]:
-                            formula_matches += 1
-                            break
-            
-            if formulas:
-                formula_score = formula_matches / len(formulas)
-                relevance_score += formula_score
-                max_score += 1.0
-        
-        # Normalize the final score
-        if max_score > 0:
-            normalized_score = relevance_score / max_score
-        else:
-            # If no scoring was possible, assign a neutral score
-            normalized_score = 0.5
-        
-        return normalized_score
+        relevance_score = self._calculate_element_relevance(element, query_parameters, query_intent)
+        return relevance_score
     
-    def _calculate_element_specificity(self, element: Dict[str, Any]) -> float:
+    def _calculate_importance(self, element: Dict[str, Any]) -> float:
         """
-        Calculate how specific and detailed an element is.
+        Calculate importance score for a knowledge element.
         
         Args:
             element: Knowledge element
             
         Returns:
-            Specificity score (0.0-1.0)
+            Importance score (0.0-1.0)
         """
-        specificity_score = 0.0
-        max_score = 4.0  # Maximum possible points
-        
-        # Check if the element has formulas (more specific)
-        if "formulas" in element and element["formulas"]:
-            specificity_score += 1.0
-            
-            # More points for formulas with variables explained
-            for formula in element["formulas"]:
-                if "variables" in formula and formula["variables"]:
-                    specificity_score += 0.5
-                    break
-        
-        # Check if the element has constraints (more specific)
-        if "constraints" in element and element["constraints"]:
-            specificity_score += 1.0
-        
-        # Check if the element has reference values (more specific)
-        if "reference_values" in element and element["reference_values"]:
-            specificity_score += 1.0
-        
-        # Check if the element has a detailed description
-        if "description" in element and len(element["description"]) > 100:
-            specificity_score += 0.5
-        
-        # Normalize the score
-        normalized_score = min(specificity_score / max_score, 1.0)
-        
-        return normalized_score
+        # This method needs to be implemented based on the specific importance criteria
+        return 0.5  # Placeholder return, actual implementation needed
     
-    def _map_dependencies(self, elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _calculate_priority(self, element: Dict[str, Any]) -> float:
+        """
+        Calculate priority score for a knowledge element.
+        
+        Args:
+            element: Knowledge element
+            
+        Returns:
+            Priority score (0.0-1.0)
+        """
+        # This method needs to be implemented based on the specific priority criteria
+        return 0.5  # Placeholder return, actual implementation needed
+    
+    def _categorize_elements(self, elements: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Categorize knowledge elements based on their source domain.
+        
+        Args:
+            elements: List of knowledge elements
+            
+        Returns:
+            Dictionary with categorized elements
+        """
+        categories = {}
+        for element in elements:
+            source_domain = element["source_domain"]
+            if source_domain not in categories:
+                categories[source_domain] = []
+            categories[source_domain].append(element)
+        return categories
+    
+    def _calculate_confidence_distribution(self, elements: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        Calculate confidence distribution for knowledge elements.
+        
+        Args:
+            elements: List of knowledge elements
+            
+        Returns:
+            Dictionary with confidence distribution
+        """
+        confidence_distribution = {}
+        for element in elements:
+            confidence = element.get("confidence", 0.5)
+            if confidence not in confidence_distribution:
+                confidence_distribution[confidence] = 0
+            confidence_distribution[confidence] += 1
+        total_elements = len(elements)
+        for confidence in confidence_distribution:
+            confidence_distribution[confidence] /= total_elements
+        return confidence_distribution
+    
+    def _map_dependencies(self, elements: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """
         Map dependencies between knowledge elements.
         
         Args:
-            elements: List of knowledge elements with scores
+            elements: List of knowledge elements
             
         Returns:
-            Elements with mapped dependencies
+            Dictionary with dependencies
         """
-        elements_with_deps = []
-        element_by_id = {elem["id"]: elem for elem in elements if "id" in elem}
-        
+        dependency_map = {}
         for element in elements:
             elem_with_deps = element.copy()
             
@@ -274,7 +321,7 @@ class KnowledgePrioritizer:
                 for formula in element.get("formulas", []):
                     # Check formula description for element IDs
                     if "description" in formula:
-                        for other_id in element_by_id:
+                        for other_id in elem_with_deps["dependencies"]:
                             # Simple check - could be much more sophisticated
                             if other_id != element.get("id") and other_id in formula["description"]:
                                 if other_id not in elem_with_deps["dependencies"]:
@@ -284,11 +331,11 @@ class KnowledgePrioritizer:
             if "reference_values" in element:
                 for ref_key, ref_value in element.get("reference_values", {}).items():
                     if isinstance(ref_value, dict) and "description" in ref_value:
-                        for other_id in element_by_id:
+                        for other_id in elem_with_deps["dependencies"]:
                             if other_id != element.get("id") and other_id in ref_value["description"]:
                                 if other_id not in elem_with_deps["dependencies"]:
                                     elem_with_deps["dependencies"].append(other_id)
             
-            elements_with_deps.append(elem_with_deps)
+            dependency_map[element["id"]] = elem_with_deps["dependencies"]
         
-        return elements_with_deps 
+        return dependency_map 

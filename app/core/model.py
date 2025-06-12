@@ -8,6 +8,7 @@ import logging
 import re
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
+from peft import PeftModel, PeftConfig
 
 # Load environment variables
 load_dotenv()
@@ -67,6 +68,11 @@ class MultiModelSprintLLM:
                     "path": os.path.join(MODEL_PATH, "distilgpt2"),
                     "type": "generative",
                     "description": "Generative model for creative responses"
+                },
+                "sprint-llm-distilled": {
+                    "path": "./sprint-llm-distilled-20250324-040451",
+                    "type": "domain_expert",
+                    "description": "Distilled domain expert model for sprint biomechanics"
                 }
             }
             
@@ -102,7 +108,7 @@ class MultiModelSprintLLM:
                     # Check if model has weights (not just tokenizer)
                     has_weights = any(
                         os.path.exists(os.path.join(model_path, f))
-                        for f in ["pytorch_model.bin", "model.safetensors", "pytorch_model-00001-of-*.bin"]
+                        for f in ["pytorch_model.bin", "model.safetensors", "pytorch_model-00001-of-*.bin", "adapter_model.safetensors"]
                     )
                     
                     if has_weights:
@@ -119,8 +125,33 @@ class MultiModelSprintLLM:
                             if self.tokenizers[model_name].pad_token is None:
                                 self.tokenizers[model_name].pad_token = self.tokenizers[model_name].eos_token
                             
+                            # Special handling for sprint-llm-distilled model with PEFT adapters
+                            if model_name == "sprint-llm-distilled" and os.path.exists(os.path.join(model_path, "adapter_config.json")):
+                                # Load PEFT config
+                                peft_config = PeftConfig.from_pretrained(model_path)
+                                
+                                # Load base model
+                                base_model = AutoModelForCausalLM.from_pretrained(
+                                    peft_config.base_model_name_or_path,
+                                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                                    device_map="auto" if torch.cuda.is_available() else None,
+                                    trust_remote_code=True
+                                )
+                                
+                                # Load PEFT model with adapters
+                                self.models[model_name] = PeftModel.from_pretrained(base_model, model_path)
+                                logger.info(f"✓ {model_name} loaded with PEFT adapters")
+                            
                             # Load model
-                            if config["type"] == "instruction":
+                            elif config["type"] == "instruction":
+                                self.models[model_name] = AutoModelForCausalLM.from_pretrained(
+                                    model_path,
+                                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                                    device_map="auto" if torch.cuda.is_available() else None,
+                                    trust_remote_code=True
+                                )
+                            elif config["type"] == "domain_expert":
+                                # Handle domain expert models
                                 self.models[model_name] = AutoModelForCausalLM.from_pretrained(
                                     model_path,
                                     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,

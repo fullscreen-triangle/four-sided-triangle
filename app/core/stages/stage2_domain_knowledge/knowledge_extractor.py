@@ -7,6 +7,7 @@ extracting domain-specific knowledge using LLMs and other knowledge sources.
 
 import logging
 from typing import Dict, Any, List, Optional
+import time
 
 from app.core.stages.stage2_domain_knowledge.llm_connector import LLMConnector
 
@@ -42,45 +43,57 @@ class KnowledgeExtractor:
         self.logger.info("Knowledge Extractor initialized")
     
     async def extract_knowledge(self, domain: str, semantic_representation: Dict[str, Any], 
-                               context: Dict[str, Any]) -> Dict[str, Any]:
+                               context: Dict[str, Any], model_preference: str = "primary") -> Dict[str, Any]:
         """
-        Extract domain-specific knowledge based on the semantic representation.
+        Extract domain-specific knowledge from expert models.
         
         Args:
-            domain: The knowledge domain to extract from
-            semantic_representation: The semantic representation from the previous stage
-            context: Context data from the orchestrator
+            domain: Domain identifier for knowledge extraction
+            semantic_representation: Structured semantic analysis
+            context: Context from previous stages
+            model_preference: "primary" or "secondary" to select which expert model to use
             
         Returns:
-            Extracted knowledge for the specified domain
+            Extracted knowledge elements with confidence scores
         """
-        self.logger.info(f"Extracting knowledge for domain: {domain}")
+        self.logger.info(f"Extracting knowledge for domain: {domain} using {model_preference} expert")
         
-        # Select the appropriate extraction strategy
-        if domain in self.extraction_strategies:
-            extraction_func = self.extraction_strategies[domain]
-        else:
-            self.logger.warning(f"No specific extraction strategy for domain {domain}, using general strategy")
-            extraction_func = self._extract_general_knowledge
-        
-        # Extract knowledge using the selected strategy
-        domain_knowledge = await extraction_func(semantic_representation, context)
-        
-        # Extract common elements across all domains
-        common_elements = await self._extract_common_elements(domain, semantic_representation, context)
-        
-        # Merge domain-specific and common knowledge
-        merged_knowledge = self._merge_knowledge(domain_knowledge, common_elements)
-        
-        # Add metadata
-        merged_knowledge["metadata"] = {
-            "domain": domain,
-            "element_count": len(merged_knowledge["elements"]),
-            "extraction_confidence": self._calculate_extraction_confidence(merged_knowledge)
-        }
-        
-        self.logger.info(f"Extracted {len(merged_knowledge['elements'])} knowledge elements for domain {domain}")
-        return merged_knowledge
+        try:
+            # Select appropriate expert based on preference
+            if model_preference == "secondary" and domain in ["sprint", "biomechanics", "athletic_performance"]:
+                # Use secondary distilled expert for complementary insights
+                domain_prompt = self._create_secondary_expert_prompt(domain, semantic_representation, context)
+                knowledge = await self.llm_connector.query_domain_expert(
+                    f"{domain}_secondary", 
+                    domain_prompt,
+                    model_params={"temperature": 0.15, "max_tokens": 1024}
+                )
+            else:
+                # Use primary expert (default behavior)
+                domain_prompt = self._create_domain_prompt(domain, semantic_representation, context)
+                knowledge = await self.llm_connector.query_domain_expert(
+                    domain, 
+                    domain_prompt,
+                    model_params={"temperature": 0.1, "max_tokens": 1024}
+                )
+            
+            # Process and structure the knowledge
+            processed_knowledge = self._process_raw_knowledge(knowledge, domain, model_preference)
+            
+            # Add extraction metadata
+            processed_knowledge["extraction_metadata"] = {
+                "domain": domain,
+                "model_preference": model_preference,
+                "extraction_timestamp": time.time(),
+                "semantic_query_complexity": self._assess_query_complexity(semantic_representation)
+            }
+            
+            self.logger.info(f"Successfully extracted {len(processed_knowledge.get('elements', []))} knowledge elements from {model_preference} expert")
+            return processed_knowledge
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting knowledge for domain {domain} with {model_preference} expert: {str(e)}")
+            return self._create_fallback_knowledge(domain, str(e), model_preference)
     
     async def _extract_medical_knowledge(self, semantic_representation: Dict[str, Any], 
                                         context: Dict[str, Any]) -> Dict[str, Any]:
@@ -591,3 +604,231 @@ class KnowledgeExtractor:
         ]
         
         return sum(confidences) / len(confidences) if confidences else 0.0 
+
+    def _create_secondary_expert_prompt(self, domain: str, semantic_representation: Dict[str, Any], 
+                                       context: Dict[str, Any]) -> str:
+        """Create specialized prompts for the secondary distilled expert."""
+        
+        base_query = semantic_representation.get("transformed_query", "")
+        parameters = semantic_representation.get("parameters", {})
+        
+        if domain == "sprint":
+            return f"""As an elite sprint biomechanics specialist with advanced expertise in 400m running, analyze the following query with focus on cutting-edge biomechanical insights:
+
+Query: {base_query}
+
+Provide advanced biomechanical analysis focusing on:
+1. Kinematic optimization patterns
+2. Ground reaction force dynamics  
+3. Energy system transitions
+4. Advanced technical refinements
+5. Performance limiting factors
+
+Extract specialized knowledge in JSON format:
+{{
+    "advanced_biomechanics": [
+        {{
+            "insight": "detailed biomechanical insight",
+            "confidence": 0.0-1.0,
+            "technical_depth": "high|medium|low",
+            "application": "training|competition|technique"
+        }}
+    ],
+    "kinematic_factors": [
+        {{
+            "factor": "specific kinematic element",
+            "impact": "performance impact description",
+            "optimization": "optimization strategy"
+        }}
+    ],
+    "energy_systems": [
+        {{
+            "system": "ATP-PC|Glycolytic|Oxidative",
+            "phase": "race phase where relevant",
+            "optimization": "specific optimization approach"
+        }}
+    ]
+}}"""
+        
+        elif domain == "biomechanics":
+            return f"""As a sports biomechanics expert specializing in sprint running mechanics, provide detailed technical analysis:
+
+Query: {base_query}
+
+Focus on:
+1. Joint angle optimization
+2. Muscle activation patterns
+3. Force production mechanics
+4. Movement efficiency
+5. Technical corrections
+
+Provide technical biomechanical knowledge."""
+        
+        elif domain == "athletic_performance":
+            return f"""As a performance optimization specialist for elite sprinters, analyze:
+
+Query: {base_query}
+
+Focus on:
+1. Training load optimization
+2. Recovery protocols
+3. Performance monitoring
+4. Periodization strategies
+5. Technology integration
+
+Provide performance optimization insights."""
+        
+        else:
+            # Fallback to regular prompt
+            return self._create_domain_prompt(domain, semantic_representation, context)
+    
+    def _process_raw_knowledge(self, raw_knowledge: Dict[str, Any], domain: str, 
+                              model_preference: str) -> Dict[str, Any]:
+        """Process raw knowledge from domain expert with model preference awareness."""
+        
+        processed = {
+            "elements": [],
+            "domain": domain,
+            "model_preference": model_preference,
+            "confidence": raw_knowledge.get("confidence", 0.8),
+            "source": f"{domain}_{model_preference}_expert"
+        }
+        
+        # Extract elements from raw knowledge
+        if "elements" in raw_knowledge:
+            for element in raw_knowledge["elements"]:
+                processed_element = {
+                    "id": element.get("id", f"{domain}_{len(processed['elements'])}"),
+                    "type": element.get("type", "knowledge_element"),
+                    "content": element.get("content", element.get("description", "")),
+                    "confidence": element.get("confidence", 0.8),
+                    "category": element.get("category", domain),
+                    "model_source": model_preference
+                }
+                
+                # Add model-specific metadata
+                if model_preference == "secondary":
+                    processed_element["expert_type"] = "biomechanics_specialist"
+                    processed_element["technical_depth"] = element.get("technical_depth", "high")
+                else:
+                    processed_element["expert_type"] = "primary_domain_expert"
+                
+                processed["elements"].append(processed_element)
+        
+        # Extract advanced insights for secondary expert
+        if model_preference == "secondary" and "advanced_biomechanics" in raw_knowledge:
+            for insight in raw_knowledge["advanced_biomechanics"]:
+                processed["elements"].append({
+                    "id": f"advanced_{len(processed['elements'])}",
+                    "type": "advanced_biomechanical_insight",
+                    "content": insight.get("insight", ""),
+                    "confidence": insight.get("confidence", 0.85),
+                    "category": "advanced_biomechanics",
+                    "model_source": "secondary",
+                    "technical_depth": insight.get("technical_depth", "high"),
+                    "application": insight.get("application", "training")
+                })
+        
+        return processed
+    
+    def _create_fallback_knowledge(self, domain: str, error: str, model_preference: str) -> Dict[str, Any]:
+        """Create fallback knowledge when extraction fails."""
+        return {
+            "elements": [{
+                "id": f"fallback_{domain}_{model_preference}",
+                "type": "extraction_error",
+                "content": f"Knowledge extraction failed for {domain} using {model_preference} expert: {error}",
+                "confidence": 0.1,
+                "category": "system_error",
+                "model_source": model_preference
+            }],
+            "domain": domain,
+            "model_preference": model_preference,
+            "confidence": 0.1,
+            "source": f"{domain}_{model_preference}_fallback",
+            "error": error
+        }
+
+    def _create_domain_prompt(self, domain: str, semantic_representation: Dict[str, Any], 
+                             context: Dict[str, Any]) -> str:
+        """Create a specialized prompt for domain-specific knowledge extraction."""
+        
+        base_query = semantic_representation.get("transformed_query", "")
+        parameters = semantic_representation.get("parameters", {})
+        
+        if domain == "sprint":
+            return f"""As an elite sprint biomechanics specialist with advanced expertise in 400m running, analyze the following query with focus on cutting-edge biomechanical insights:
+
+Query: {base_query}
+
+Provide advanced biomechanical analysis focusing on:
+1. Kinematic optimization patterns
+2. Ground reaction force dynamics  
+3. Energy system transitions
+4. Advanced technical refinements
+5. Performance limiting factors
+
+Extract specialized knowledge in JSON format:
+{{
+    "advanced_biomechanics": [
+        {{
+            "insight": "detailed biomechanical insight",
+            "confidence": 0.0-1.0,
+            "technical_depth": "high|medium|low",
+            "application": "training|competition|technique"
+        }}
+    ],
+    "kinematic_factors": [
+        {{
+            "factor": "specific kinematic element",
+            "impact": "performance impact description",
+            "optimization": "optimization strategy"
+        }}
+    ],
+    "energy_systems": [
+        {{
+            "system": "ATP-PC|Glycolytic|Oxidative",
+            "phase": "race phase where relevant",
+            "optimization": "specific optimization approach"
+        }}
+    ]
+}}"""
+        
+        elif domain == "biomechanics":
+            return f"""As a sports biomechanics expert specializing in sprint running mechanics, provide detailed technical analysis:
+
+Query: {base_query}
+
+Focus on:
+1. Joint angle optimization
+2. Muscle activation patterns
+3. Force production mechanics
+4. Movement efficiency
+5. Technical corrections
+
+Provide technical biomechanical knowledge."""
+        
+        elif domain == "athletic_performance":
+            return f"""As a performance optimization specialist for elite sprinters, analyze:
+
+Query: {base_query}
+
+Focus on:
+1. Training load optimization
+2. Recovery protocols
+3. Performance monitoring
+4. Periodization strategies
+5. Technology integration
+
+Provide performance optimization insights."""
+        
+        else:
+            # Fallback to regular prompt
+            return self._construct_general_prompt(semantic_representation)
+
+    def _assess_query_complexity(self, semantic_representation: Dict[str, Any]) -> float:
+        """Assess the complexity of the query based on semantic representation."""
+        
+        # This is a placeholder implementation. In a real system, this would involve
+        # a more comprehensive analysis of the query's complexity.
+        return 0.5  # Placeholder complexity score 
