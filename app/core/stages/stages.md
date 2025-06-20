@@ -90,14 +90,16 @@ The new orchestrator module serves as the central control mechanism for the enti
 - Generates contextually appropriate prompts for each stage
 - Monitors output quality and initiates refinement loops
 - Adapts pipeline behavior based on query complexity
+- **Coordinates dual-model extraction in domain knowledge stage**
+- **Manages multi-model fusion and consensus validation**
 
 **Key Components:**
 
 - **Core**: Main orchestrator implementation
 - **Working Memory**: State management across stages
-- **Prompt Generator**: Dynamic prompt creation
-- **Process Monitor**: Quality evaluation and feedback
-- **Interfaces**: Stage interface definitions
+- **Prompt Generator**: Dynamic prompt creation with model-specific optimization
+- **Process Monitor**: Quality evaluation and feedback with multi-model assessment
+- **Interfaces**: Stage interface definitions with dual-model support
 
 #### 1.1 Orchestration Core Mechanisms
 
