@@ -14,6 +14,9 @@ pub mod fuzzy_evidence;
 pub mod evidence_network;
 pub mod metacognitive_optimizer;
 
+// Autobahn integration module
+pub mod autobahn_bridge;
+
 // Error types
 pub mod error;
 
@@ -72,6 +75,16 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_optimize_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_evaluate_decision, m)?)?;
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_update_strategy, m)?)?;
+    
+    // Register Autobahn bridge functions
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_initialize_autobahn_bridge, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_is_autobahn_available, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_bayesian_inference, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_fuzzy_logic, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_evidence_network, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_metacognitive_optimization, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_optimize_pipeline, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_get_status, m)?)?;
     
     Ok(())
 } 

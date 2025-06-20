@@ -3,11 +3,13 @@ Rust Integration Module
 
 This module provides Python wrappers for high-performance Rust implementations
 of computationally intensive operations in the Four-Sided Triangle system.
+Routes probabilistic reasoning tasks to Autobahn system when available.
 """
 
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
+import asyncio
 
 try:
     import four_sided_triangle_core as rust_core
@@ -18,16 +20,105 @@ except ImportError as e:
     logging.warning(f"Rust core module not available: {e}. Falling back to Python implementations.")
     rust_core = None
 
+try:
+    from .autobahn_interface import (
+        autobahn_interface, 
+        AutobahnResponse, 
+        BayesianInferenceRequest,
+        FuzzyLogicRequest,
+        EvidenceNetworkRequest,
+        MetacognitiveOptimizationRequest,
+        ProbabilisticReasoningRequest,
+        AutobahnConnectionStatus
+    )
+    AUTOBAHN_AVAILABLE = True
+    logging.info("Autobahn interface loaded successfully")
+except ImportError as e:
+    AUTOBAHN_AVAILABLE = False
+    logging.warning(f"Autobahn interface not available: {e}. Using local probabilistic processing.")
+    autobahn_interface = None
+
 class RustIntegration:
-    """Main integration class for Rust components."""
+    """Main integration class for Rust components with Autobahn probabilistic reasoning."""
     
     def __init__(self):
         self.rust_available = RUST_AVAILABLE
+        self.autobahn_available = AUTOBAHN_AVAILABLE
         self.logger = logging.getLogger(__name__)
         
         # Registry for fuzzy evidence networks and metacognitive optimizers
         self.evidence_networks = {}
         self.metacognitive_optimizers = {}
+        
+        # Autobahn connection status
+        self.autobahn_connected = False
+        
+    def initialize_autobahn(self, config=None):
+        """Initialize connection to Autobahn system for probabilistic reasoning."""
+        if not self.rust_available:
+            self.logger.warning("Rust not available. Cannot initialize Autobahn bridge.")
+            return False
+        
+        try:
+            # Default configuration for Autobahn
+            autobahn_config = {
+                "base_url": "http://localhost:8080",
+                "api_version": "v1",
+                "timeout_seconds": 30,
+                "max_retries": 3,
+                "retry_delay_ms": 1000,
+                "max_frequency_hz": 1000.0,
+                "atp_budget_per_query": 150.0,
+                "coherence_threshold": 0.85,
+                "target_entropy": 2.2,
+                "immune_sensitivity": 0.8,
+                "consciousness_emergence_threshold": 0.7,
+                "default_metabolic_mode": "mammalian",
+                "default_hierarchy_level": "biological",
+                "enable_consciousness_modeling": True,
+                "enable_biological_processing": True,
+                "enable_oscillatory_dynamics": True
+            }
+            
+            # Override with provided config
+            if config:
+                autobahn_config.update(config)
+            
+            config_json = json.dumps(autobahn_config)
+            self.autobahn_connected = rust_core.py_initialize_autobahn_bridge(config_json)
+            
+            if self.autobahn_connected:
+                self.logger.info("Successfully connected to Autobahn probabilistic reasoning engine")
+            else:
+                self.logger.warning("Failed to connect to Autobahn. Using fallback probabilistic processing.")
+            
+            return self.autobahn_connected
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing Autobahn: {e}")
+            self.autobahn_connected = False
+            return False
+    
+    def shutdown_autobahn(self):
+        """Shutdown connection to Autobahn system."""
+        if self.autobahn_connected:
+            try:
+                # The Rust bridge handles cleanup automatically
+                self.autobahn_connected = False
+                self.logger.info("Disconnected from Autobahn system")
+            except Exception as e:
+                self.logger.error(f"Error shutting down Autobahn: {e}")
+    
+    def _should_use_autobahn(self) -> bool:
+        """Determine if Autobahn should be used for probabilistic reasoning."""
+        if not self.rust_available:
+            return False
+        
+        try:
+            # Check if Autobahn bridge is available in Rust
+            return rust_core.py_is_autobahn_available()
+        except Exception:
+            return False
     
     # Bayesian Evaluation Methods
     
@@ -37,17 +128,37 @@ class RustIntegration:
         domain_knowledge: Dict[str, Any], 
         query_intent: Dict[str, Any]
     ) -> float:
-        """Calculate Bayesian posterior probability with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_posterior_probability(solution, domain_knowledge, query_intent)
+        """Calculate Bayesian posterior probability with Autobahn/Rust acceleration."""
+        # Try Autobahn first for probabilistic reasoning
+        if self._should_use_autobahn():
+            try:
+                evidence_data = json.dumps({"solution": solution, "domain": domain_knowledge})
+                prior_beliefs = json.dumps(query_intent.get("prior_beliefs", {}))
+                hypothesis_space = json.dumps([solution])
+                
+                response_json = rust_core.py_autobahn_bayesian_inference(
+                    evidence_data, prior_beliefs, hypothesis_space, "belief_propagation"
+                )
+                response = json.loads(response_json)
+                
+                if response.get("success", False):
+                    return response.get("result", {}).get("posterior_probability", 0.0)
+                else:
+                    self.logger.warning(f"Autobahn posterior calculation failed: {response.get('error_message', 'Unknown error')}")
+            except Exception as e:
+                self.logger.warning(f"Autobahn posterior calculation error: {e}")
         
-        try:
-            domain_json = json.dumps(domain_knowledge)
-            intent_json = json.dumps(query_intent)
-            return rust_core.py_calculate_posterior_probability(solution, domain_json, intent_json)
-        except Exception as e:
-            self.logger.warning(f"Rust posterior calculation failed: {e}. Using fallback.")
-            return self._fallback_posterior_probability(solution, domain_knowledge, query_intent)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                domain_json = json.dumps(domain_knowledge)
+                intent_json = json.dumps(query_intent)
+                return rust_core.py_calculate_posterior_probability(solution, domain_json, intent_json)
+            except Exception as e:
+                self.logger.warning(f"Rust posterior calculation failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_posterior_probability(solution, domain_knowledge, query_intent)
     
     def calculate_information_gain(
         self, 
@@ -55,17 +166,36 @@ class RustIntegration:
         domain_knowledge: Dict[str, Any], 
         query_intent: Dict[str, Any]
     ) -> float:
-        """Calculate information gain with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_information_gain(solution, domain_knowledge, query_intent)
+        """Calculate information gain with Autobahn/Rust acceleration."""
+        # Try Autobahn first for probabilistic reasoning
+        if self._should_use_autobahn():
+            try:
+                request = BayesianInferenceRequest(
+                    evidence_data={"solution": solution, "domain": domain_knowledge},
+                    prior_beliefs=query_intent.get("prior_beliefs", {}),
+                    hypothesis_space=[solution],
+                    inference_method="belief_propagation"
+                )
+                
+                response = await autobahn_interface.bayesian_inference(request)
+                if response.success:
+                    return response.result.get("information_gain", 0.0)
+                else:
+                    self.logger.warning(f"Autobahn information gain calculation failed: {response.error_message}")
+            except Exception as e:
+                self.logger.warning(f"Autobahn information gain calculation error: {e}")
         
-        try:
-            domain_json = json.dumps(domain_knowledge)
-            intent_json = json.dumps(query_intent)
-            return rust_core.py_calculate_information_gain(solution, domain_json, intent_json)
-        except Exception as e:
-            self.logger.warning(f"Rust information gain calculation failed: {e}. Using fallback.")
-            return self._fallback_information_gain(solution, domain_knowledge, query_intent)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                domain_json = json.dumps(domain_knowledge)
+                intent_json = json.dumps(query_intent)
+                return rust_core.py_calculate_information_gain(solution, domain_json, intent_json)
+            except Exception as e:
+                self.logger.warning(f"Rust information gain calculation failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_information_gain(solution, domain_knowledge, query_intent)
     
     def bayesian_evaluate(
         self, 
@@ -73,18 +203,47 @@ class RustIntegration:
         domain_knowledge: Dict[str, Any], 
         query_intent: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Perform complete Bayesian evaluation with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_bayesian_evaluate(solution, domain_knowledge, query_intent)
+        """Perform complete Bayesian evaluation with Autobahn/Rust acceleration."""
+        # Try Autobahn first for comprehensive probabilistic evaluation
+        if self._should_use_autobahn():
+            try:
+                request = BayesianInferenceRequest(
+                    evidence_data={"solution": solution, "domain": domain_knowledge},
+                    prior_beliefs=query_intent.get("prior_beliefs", {}),
+                    hypothesis_space=[solution],
+                    inference_method="belief_propagation"
+                )
+                
+                response = await autobahn_interface.bayesian_inference(request)
+                if response.success:
+                    # Enrich with Autobahn-specific metrics
+                    result = response.result.copy()
+                    result.update({
+                        "consciousness_level": response.consciousness_level,
+                        "membrane_coherence": response.membrane_coherence,
+                        "entropy_optimization": response.entropy_optimization,
+                        "phi_value": response.phi_value,
+                        "oscillatory_efficiency": response.oscillatory_efficiency,
+                        "processing_time": response.processing_time
+                    })
+                    return result
+                else:
+                    self.logger.warning(f"Autobahn Bayesian evaluation failed: {response.error_message}")
+            except Exception as e:
+                self.logger.warning(f"Autobahn Bayesian evaluation error: {e}")
         
-        try:
-            domain_json = json.dumps(domain_knowledge)
-            intent_json = json.dumps(query_intent)
-            result_json = rust_core.py_bayesian_evaluate(solution, domain_json, intent_json)
-            return json.loads(result_json)
-        except Exception as e:
-            self.logger.warning(f"Rust Bayesian evaluation failed: {e}. Using fallback.")
-            return self._fallback_bayesian_evaluate(solution, domain_knowledge, query_intent)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                domain_json = json.dumps(domain_knowledge)
+                intent_json = json.dumps(query_intent)
+                result_json = rust_core.py_bayesian_evaluate(solution, domain_json, intent_json)
+                return json.loads(result_json)
+            except Exception as e:
+                self.logger.warning(f"Rust Bayesian evaluation failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_bayesian_evaluate(solution, domain_knowledge, query_intent)
     
     # Throttle Detection Methods
     
@@ -269,19 +428,39 @@ class RustIntegration:
         fuzzy_sets: List[Dict[str, Any]], 
         input_variables: Dict[str, float]
     ) -> Dict[str, float]:
-        """Perform fuzzy inference with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_fuzzy_inference(rules, fuzzy_sets, input_variables)
+        """Perform fuzzy inference with Autobahn/Rust acceleration."""
+        # Try Autobahn first for fuzzy logic processing
+        if self._should_use_autobahn():
+            try:
+                fuzzy_sets_json = json.dumps(fuzzy_sets)
+                rules_json = json.dumps(rules)
+                input_variables_json = json.dumps(input_variables)
+                
+                response_json = rust_core.py_autobahn_fuzzy_logic(
+                    fuzzy_sets_json, rules_json, input_variables_json, "centroid"
+                )
+                response = json.loads(response_json)
+                
+                if response.get("success", False):
+                    return response.get("result", {}).get("output_variables", {})
+                else:
+                    self.logger.warning(f"Autobahn fuzzy inference failed: {response.get('error_message', 'Unknown error')}")
+            except Exception as e:
+                self.logger.warning(f"Autobahn fuzzy inference error: {e}")
         
-        try:
-            rules_json = json.dumps(rules)
-            fuzzy_sets_json = json.dumps(fuzzy_sets)
-            input_json = json.dumps(input_variables)
-            result_json = rust_core.py_fuzzy_inference(rules_json, fuzzy_sets_json, input_json)
-            return json.loads(result_json)
-        except Exception as e:
-            self.logger.warning(f"Rust fuzzy inference failed: {e}. Using fallback.")
-            return self._fallback_fuzzy_inference(rules, fuzzy_sets, input_variables)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                rules_json = json.dumps(rules)
+                fuzzy_sets_json = json.dumps(fuzzy_sets)
+                input_json = json.dumps(input_variables)
+                result_json = rust_core.py_fuzzy_inference(rules_json, fuzzy_sets_json, input_json)
+                return json.loads(result_json)
+            except Exception as e:
+                self.logger.warning(f"Rust fuzzy inference failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_fuzzy_inference(rules, fuzzy_sets, input_variables)
     
     def defuzzify(self, variable: str, activation_level: float, fuzzy_set: Dict[str, Any]) -> float:
         """Defuzzify output with Rust acceleration."""
@@ -333,34 +512,95 @@ class RustIntegration:
             return self._fallback_update_node_evidence(network_id, node_id, evidence)
     
     def propagate_evidence(self, network_id: str, algorithm: str = "belief_propagation") -> None:
-        """Propagate evidence through the network with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_propagate_evidence(network_id, algorithm)
+        """Propagate evidence through the network with Autobahn/Rust acceleration."""
+        # Try Autobahn first for evidence network processing
+        if self._should_use_autobahn():
+            try:
+                # Get network structure from local registry
+                network_data = self.evidence_networks.get(network_id, {})
+                
+                if network_data:
+                    request = EvidenceNetworkRequest(
+                        network_structure=network_data,
+                        evidence_updates=[],
+                        query_nodes=[],
+                        propagation_algorithm=algorithm
+                    )
+                    
+                    response = await autobahn_interface.evidence_network_processing(request)
+                    if response.success:
+                        # Update local network state
+                        self.evidence_networks[network_id].update(response.result)
+                        return
+                    else:
+                        self.logger.warning(f"Autobahn evidence propagation failed: {response.error_message}")
+                else:
+                    self.logger.warning(f"Network {network_id} not found in registry")
+            except Exception as e:
+                self.logger.warning(f"Autobahn evidence propagation error: {e}")
         
-        try:
-            rust_network_id = self.evidence_networks.get(network_id)
-            if rust_network_id:
-                rust_core.py_propagate_evidence(rust_network_id, algorithm)
-        except Exception as e:
-            self.logger.warning(f"Rust evidence propagation failed: {e}. Using fallback.")
-            return self._fallback_propagate_evidence(network_id, algorithm)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                rust_network_id = self.evidence_networks.get(network_id)
+                if rust_network_id:
+                    rust_core.py_propagate_evidence(rust_network_id, algorithm)
+            except Exception as e:
+                self.logger.warning(f"Rust evidence propagation failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_propagate_evidence(network_id, algorithm)
     
     def query_network(self, network_id: str, query: Dict[str, Any]) -> Dict[str, Any]:
-        """Query the evidence network with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_query_network(network_id, query)
+        """Query the evidence network with Autobahn/Rust acceleration."""
+        # Try Autobahn first for evidence network processing
+        if self._should_use_autobahn():
+            try:
+                # Get network structure from local registry
+                network_data = self.evidence_networks.get(network_id, {})
+                
+                if network_data:
+                    request = EvidenceNetworkRequest(
+                        network_structure=network_data,
+                        evidence_updates=[],
+                        query_nodes=query.get("nodes", []),
+                        propagation_algorithm=query.get("algorithm", "belief_propagation")
+                    )
+                    
+                    response = await autobahn_interface.evidence_network_processing(request)
+                    if response.success:
+                        # Enrich with Autobahn-specific metrics
+                        result = response.result.copy()
+                        result.update({
+                            "consciousness_level": response.consciousness_level,
+                            "membrane_coherence": response.membrane_coherence,
+                            "phi_value": response.phi_value,
+                            "processing_time": response.processing_time,
+                            "oscillatory_efficiency": response.oscillatory_efficiency
+                        })
+                        return result
+                    else:
+                        self.logger.warning(f"Autobahn network query failed: {response.error_message}")
+                else:
+                    self.logger.warning(f"Network {network_id} not found in registry")
+            except Exception as e:
+                self.logger.warning(f"Autobahn network query error: {e}")
         
-        try:
-            rust_network_id = self.evidence_networks.get(network_id)
-            if rust_network_id:
-                query_json = json.dumps(query)
-                result_json = rust_core.py_query_network(rust_network_id, query_json)
-                return json.loads(result_json)
-            else:
-                return self._fallback_query_network(network_id, query)
-        except Exception as e:
-            self.logger.warning(f"Rust network query failed: {e}. Using fallback.")
-            return self._fallback_query_network(network_id, query)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                rust_network_id = self.evidence_networks.get(network_id)
+                if rust_network_id:
+                    query_json = json.dumps(query)
+                    result_json = rust_core.py_query_network(rust_network_id, query_json)
+                    return json.loads(result_json)
+                else:
+                    return self._fallback_query_network(network_id, query)
+            except Exception as e:
+                self.logger.warning(f"Rust network query failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_query_network(network_id, query)
     
     # Metacognitive Optimizer Methods
     
@@ -385,21 +625,78 @@ class RustIntegration:
         optimizer_id: str, 
         context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Optimize pipeline decisions with Rust acceleration."""
-        if not self.rust_available:
-            return self._fallback_optimize_pipeline(optimizer_id, context)
+        """Optimize pipeline decisions with Autobahn/Rust acceleration."""
+        # Try Autobahn first for metacognitive optimization
+        if self._should_use_autobahn():
+            try:
+                # Prepare optimization context for the Four-Sided Triangle pipeline
+                strategies = [
+                    {"id": "query_processing", "type": "query_optimization", "stage": 0},
+                    {"id": "semantic_retrieval", "type": "retrieval_strategy", "stage": 1},
+                    {"id": "domain_knowledge", "type": "knowledge_strategy", "stage": 2},
+                    {"id": "reasoning_optimization", "type": "reasoning_strategy", "stage": 3},
+                    {"id": "solution_generation", "type": "generation_strategy", "stage": 4},
+                    {"id": "quality_scoring", "type": "scoring_strategy", "stage": 5},
+                    {"id": "response_comparison", "type": "comparison_strategy", "stage": 6},
+                    {"id": "verification", "type": "verification_strategy", "stage": 7}
+                ]
+                
+                objectives = [
+                    {"name": "output_quality", "weight": 0.4, "target": context.get("quality_target", 0.9)},
+                    {"name": "processing_efficiency", "weight": 0.3, "target": 0.8},
+                    {"name": "user_satisfaction", "weight": 0.2, "target": 0.9},  
+                    {"name": "resource_efficiency", "weight": 0.1, "target": 0.8}
+                ]
+                
+                constraints = [
+                    {"variable": "processing_time", "type": "upper_bound", "value": context.get("time_limit", 10.0)},
+                    {"variable": "memory_usage", "type": "upper_bound", "value": 0.8},
+                    {"variable": "cpu_usage", "type": "upper_bound", "value": 0.8}
+                ]
+                
+                request = MetacognitiveOptimizationRequest(
+                    decision_context=context,
+                    available_strategies=strategies,
+                    optimization_objectives=objectives,
+                    constraints=constraints,
+                    learning_enabled=True,
+                    consciousness_integration=True
+                )
+                
+                response = await autobahn_interface.metacognitive_optimization(request)
+                if response.success:
+                    # Enrich with Autobahn-specific metrics
+                    result = response.result.copy()
+                    result.update({
+                        "consciousness_level": response.consciousness_level,
+                        "membrane_coherence": response.membrane_coherence,
+                        "entropy_optimization": response.entropy_optimization,
+                        "phi_value": response.phi_value,
+                        "atp_consumption": response.atp_consumption,
+                        "oscillatory_efficiency": response.oscillatory_efficiency,
+                        "processing_time": response.processing_time
+                    })
+                    return result
+                else:
+                    self.logger.warning(f"Autobahn pipeline optimization failed: {response.error_message}")
+            except Exception as e:
+                self.logger.warning(f"Autobahn pipeline optimization error: {e}")
         
-        try:
-            rust_optimizer_id = self.metacognitive_optimizers.get(optimizer_id)
-            if rust_optimizer_id:
-                context_json = json.dumps(context)
-                result_json = rust_core.py_optimize_pipeline(rust_optimizer_id, context_json)
-                return json.loads(result_json)
-            else:
-                return self._fallback_optimize_pipeline(optimizer_id, context)
-        except Exception as e:
-            self.logger.warning(f"Rust pipeline optimization failed: {e}. Using fallback.")
-            return self._fallback_optimize_pipeline(optimizer_id, context)
+        # Fall back to Rust if available
+        if self.rust_available:
+            try:
+                rust_optimizer_id = self.metacognitive_optimizers.get(optimizer_id)
+                if rust_optimizer_id:
+                    context_json = json.dumps(context)
+                    result_json = rust_core.py_optimize_pipeline(rust_optimizer_id, context_json)
+                    return json.loads(result_json)
+                else:
+                    return self._fallback_optimize_pipeline(optimizer_id, context)
+            except Exception as e:
+                self.logger.warning(f"Rust pipeline optimization failed: {e}. Using fallback.")
+        
+        # Final fallback to Python
+        return self._fallback_optimize_pipeline(optimizer_id, context)
     
     def evaluate_decision(
         self, 

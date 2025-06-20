@@ -43,6 +43,9 @@ tokio = { version = "1.0", features = ["full"] }
 rayon = "1.8"
 crossbeam = "0.8"
 
+# HTTP client for Autobahn integration
+reqwest = { version = "0.11", features = ["json"] }
+
 # Performance optimization
 simd-json = "0.13"
 ahash = "0.8"
@@ -63,10 +66,6 @@ thiserror = "1.0"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1.4"
-
-[[bench]]
-name = "performance_benchmarks"
-harness = false
 
 [profile.release]
 lto = true

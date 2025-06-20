@@ -46,6 +46,18 @@ pub enum FourSidedTriangleError {
 
     #[error("Resource exhaustion: {message}")]
     ResourceError { message: String },
+
+    #[error("Network connection error: {message}")]
+    NetworkError { message: String },
+
+    #[error("Connection error: {message}")]
+    ConnectionError { message: String },
+
+    #[error("Runtime error: {message}")]
+    RuntimeError { message: String },
+
+    #[error("Autobahn integration error: {message}")]
+    AutobahnError { message: String },
 }
 
 impl From<FourSidedTriangleError> for PyErr {
@@ -92,6 +104,18 @@ impl From<FourSidedTriangleError> for PyErr {
             }
             FourSidedTriangleError::ResourceError { message } => {
                 PyErr::new::<pyo3::exceptions::PyMemoryError, _>(format!("Resource Error: {}", message))
+            }
+            FourSidedTriangleError::NetworkError { message } => {
+                PyErr::new::<pyo3::exceptions::PyConnectionError, _>(format!("Network Error: {}", message))
+            }
+            FourSidedTriangleError::ConnectionError { message } => {
+                PyErr::new::<pyo3::exceptions::PyConnectionError, _>(format!("Connection Error: {}", message))
+            }
+            FourSidedTriangleError::RuntimeError { message } => {
+                PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Runtime Error: {}", message))
+            }
+            FourSidedTriangleError::AutobahnError { message } => {
+                PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Autobahn Error: {}", message))
             }
         }
     }
