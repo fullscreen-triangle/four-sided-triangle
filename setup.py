@@ -1,40 +1,77 @@
 from setuptools import setup, find_packages
-import os
-
-# Read dependencies from requirements.txt
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
-
-# Read long description from README
-with open('README.md', encoding='utf-8') as f:
-    long_description = f.read()
+from setuptools_rust import RustExtension, Binding
 
 setup(
     name="four-sided-triangle",
     version="0.1.0",
-    description="A RAG pipeline with domain expert LLM for sprint running",
-    long_description=long_description,
+    description="High-performance RAG system with Rust optimization",
+    long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    author="Four Sided Triangle Team",
-    author_email="team@four-sided-triangle.ai",
-    url="https://github.com/yourusername/four-sided-triangle",
-    packages=find_packages(exclude=["tests", "tests.*"]),
-    python_requires=">=3.10",
-    install_requires=required,
+    author="Your Name",
+    author_email="your.email@example.com",
+    packages=find_packages(),
+    rust_extensions=[
+        RustExtension(
+            "four_sided_triangle_core",
+            path="Cargo.toml",
+            binding=Binding.PyO3,
+            debug=False,
+        )
+    ],
     classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Science/Research",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Programming Language :: Rust",
     ],
-    entry_points={
-        'console_scripts': [
-            'run-api=run_api:main',
-            'run-modeler=backend.run_modeler_api:main',
-        ],
+    python_requires=">=3.8",
+    install_requires=[
+        "numpy>=1.21.0",
+        "torch>=2.0.0",
+        "transformers>=4.25.0",
+        "datasets>=2.7.0",
+        "accelerate>=0.15.0",
+        "peft>=0.6.0",
+        "bitsandbytes>=0.41.0",
+        "scipy>=1.7.0",
+        "scikit-learn>=1.0.0",
+        "pandas>=1.3.0",
+        "anthropic>=0.3.0",
+        "openai>=1.0.0",
+        "fastapi>=0.68.0",
+        "uvicorn>=0.15.0",
+        "pydantic>=1.8.0",
+        "sqlalchemy>=1.4.0",
+        "alembic>=1.7.0",
+        "redis>=4.0.0",
+        "celery>=5.2.0",
+        "python-multipart>=0.0.5",
+        "python-jose[cryptography]>=3.3.0",
+        "passlib[bcrypt]>=1.7.4",
+        "python-dotenv>=0.19.0",
+        "loguru>=0.6.0",
+        "pytest>=6.2.0",
+        "pytest-asyncio>=0.19.0",
+        "httpx>=0.23.0",
+    ],
+    extras_require={
+        "dev": [
+            "black>=22.0.0",
+            "isort>=5.10.0",
+            "flake8>=4.0.0",
+            "mypy>=0.950",
+            "pre-commit>=2.17.0",
+            "pytest-cov>=3.0.0",
+            "pytest-benchmark>=3.4.0",
+            "maturin>=1.0.0",
+            "setuptools-rust>=1.6.0",
+        ]
     },
+    zip_safe=False,
     include_package_data=True,
 )
