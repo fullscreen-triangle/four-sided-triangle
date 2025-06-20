@@ -21,6 +21,13 @@ statrs = "0.16"
 rand = "0.8"
 rand_distr = "0.4"
 
+# Graph processing and network analysis
+petgraph = "0.6"
+indexmap = "2.0"
+
+# Fuzzy logic and uncertainty
+ordered-float = "4.0"
+
 # Text processing and NLP
 regex = "1.10"
 unicode-segmentation = "1.10"

@@ -9,6 +9,11 @@ pub mod quality_assessment;
 pub mod optimization;
 pub mod utils;
 
+// New fuzzy evidence system modules
+pub mod fuzzy_evidence;
+pub mod evidence_network;
+pub mod metacognitive_optimizer;
+
 // Error types
 pub mod error;
 
@@ -49,6 +54,24 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     // Register optimization functions
     m.add_function(wrap_pyfunction!(optimization::py_optimize_resource_allocation, m)?)?;
     m.add_function(wrap_pyfunction!(optimization::py_calculate_roi, m)?)?;
+    
+    // Register fuzzy evidence system functions
+    m.add_function(wrap_pyfunction!(fuzzy_evidence::py_create_fuzzy_set, m)?)?;
+    m.add_function(wrap_pyfunction!(fuzzy_evidence::py_calculate_membership, m)?)?;
+    m.add_function(wrap_pyfunction!(fuzzy_evidence::py_fuzzy_inference, m)?)?;
+    m.add_function(wrap_pyfunction!(fuzzy_evidence::py_defuzzify, m)?)?;
+    
+    // Register evidence network functions
+    m.add_function(wrap_pyfunction!(evidence_network::py_create_evidence_network, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_update_node_evidence, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_propagate_evidence, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_query_network, m)?)?;
+    
+    // Register metacognitive optimizer functions
+    m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_create_optimizer, m)?)?;
+    m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_optimize_pipeline, m)?)?;
+    m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_evaluate_decision, m)?)?;
+    m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_update_strategy, m)?)?;
     
     Ok(())
 } 

@@ -52,13 +52,31 @@ if [ "$1" = "--with-tests" ]; then
     echo "🧪 Running Python integration tests..."
     python -c "
 import sys
+import json
 try:
     import four_sided_triangle_core
     print('✅ Rust module imported successfully')
     
-    # Test a simple function
+    # Test basic functions
     result = four_sided_triangle_core.py_calculate_text_similarity('hello world', 'hello rust')
     print(f'✅ Text similarity test passed: {result}')
+    
+    # Test fuzzy evidence system
+    fuzzy_set = four_sided_triangle_core.py_create_fuzzy_set(
+        'test_set', 0.0, 1.0, 
+        json.dumps({'type': 'triangular', 'left': 0.0, 'center': 0.5, 'right': 1.0})
+    )
+    print('✅ Fuzzy set creation test passed')
+    
+    # Test evidence network
+    network_id = four_sided_triangle_core.py_create_evidence_network()
+    print(f'✅ Evidence network creation test passed: {network_id}')
+    
+    # Test metacognitive optimizer
+    optimizer_id = four_sided_triangle_core.py_create_optimizer()
+    print(f'✅ Metacognitive optimizer creation test passed: {optimizer_id}')
+    
+    print('✅ All fuzzy evidence system tests passed')
     
 except ImportError as e:
     print(f'❌ Failed to import Rust module: {e}')
