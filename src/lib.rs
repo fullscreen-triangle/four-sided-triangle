@@ -1,4 +1,7 @@
 use pyo3::prelude::*;
+use std::sync::Mutex;
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
 
 // Core modules
 pub mod bayesian;
@@ -9,7 +12,7 @@ pub mod quality_assessment;
 pub mod optimization;
 pub mod utils;
 
-// New fuzzy evidence system modules
+// Enhanced fuzzy evidence system modules
 pub mod fuzzy_evidence;
 pub mod evidence_network;
 pub mod metacognitive_optimizer;
@@ -22,6 +25,16 @@ pub mod error;
 
 // Re-exports for convenience
 pub use error::{FourSidedTriangleError, Result};
+
+// Global registries for managing instances
+static EVIDENCE_NETWORKS: Lazy<Mutex<HashMap<String, evidence_network::EvidenceNetwork>>> = 
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+static METACOGNITIVE_OPTIMIZERS: Lazy<Mutex<HashMap<String, metacognitive_optimizer::MetacognitiveOptimizer>>> = 
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+static FUZZY_ENGINES: Lazy<Mutex<HashMap<String, fuzzy_evidence::FuzzyInferenceEngine>>> = 
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Python module initialization
 #[pymodule]
@@ -63,18 +76,23 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fuzzy_evidence::py_calculate_membership, m)?)?;
     m.add_function(wrap_pyfunction!(fuzzy_evidence::py_fuzzy_inference, m)?)?;
     m.add_function(wrap_pyfunction!(fuzzy_evidence::py_defuzzify, m)?)?;
+    m.add_function(wrap_pyfunction!(fuzzy_evidence::py_combine_evidence, m)?)?;
     
-    // Register evidence network functions
+    // Register evidence network functions  
     m.add_function(wrap_pyfunction!(evidence_network::py_create_evidence_network, m)?)?;
-    m.add_function(wrap_pyfunction!(evidence_network::py_update_node_evidence, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_add_node, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_add_edge, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_update_node_evidence, m)?)?;  
     m.add_function(wrap_pyfunction!(evidence_network::py_propagate_evidence, m)?)?;
     m.add_function(wrap_pyfunction!(evidence_network::py_query_network, m)?)?;
+    m.add_function(wrap_pyfunction!(evidence_network::py_get_network_statistics, m)?)?;
     
     // Register metacognitive optimizer functions
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_create_optimizer, m)?)?;
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_optimize_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_evaluate_decision, m)?)?;
     m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_update_strategy, m)?)?;
+    m.add_function(wrap_pyfunction!(metacognitive_optimizer::py_get_optimizer_statistics, m)?)?;
     
     // Register Autobahn bridge functions
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_initialize_autobahn_bridge, m)?)?;
@@ -83,8 +101,7 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_fuzzy_logic, m)?)?;
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_evidence_network, m)?)?;
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_metacognitive_optimization, m)?)?;
-    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_optimize_pipeline, m)?)?;
-    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_get_status, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_pipeline_optimization, m)?)?;
     
     Ok(())
 } 

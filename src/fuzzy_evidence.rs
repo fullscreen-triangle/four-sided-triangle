@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use rand;
 
 /// Fuzzy membership function types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -449,24 +450,37 @@ pub fn create_default_fuzzy_sets() -> Vec<FuzzySet> {
 
 // Python FFI functions
 
+/// Generate a unique fuzzy engine ID
+fn generate_fuzzy_engine_id() -> String {
+    format!("fuzzy_{}", rand::random::<u64>())
+}
+
 #[pyfunction]
 pub fn py_create_fuzzy_set(
     name: &str,
     universe_min: f64,
     universe_max: f64,
-    membership_function: &str,
+    membership_function_json: &str,
 ) -> PyResult<String> {
-    let membership_fn: MembershipFunction = serde_json::from_str(membership_function)?;
+    let membership_function: MembershipFunction = serde_json::from_str(membership_function_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid membership function: {}", e)))?;
     
     let fuzzy_set = FuzzySet {
         name: name.to_string(),
         universe_min,
         universe_max,
-        membership_function: membership_fn,
+        membership_function,
     };
     
-    let json_result = serde_json::to_string(&fuzzy_set)?;
-    Ok(json_result)
+    let engine_id = generate_fuzzy_engine_id();
+    let mut engine = FuzzyInferenceEngine::new();
+    engine.add_fuzzy_set(fuzzy_set)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+    
+    let mut engines = crate::FUZZY_ENGINES.lock().unwrap();
+    engines.insert(engine_id.clone(), engine);
+    
+    Ok(engine_id)
 }
 
 #[pyfunction]
@@ -474,11 +488,13 @@ pub fn py_calculate_membership(
     value: f64,
     fuzzy_set_json: &str,
 ) -> PyResult<f64> {
-    let fuzzy_set: FuzzySet = serde_json::from_str(fuzzy_set_json)?;
-    let mut engine = FuzzyInferenceEngine::new();
-    engine.add_fuzzy_set(fuzzy_set.clone())?;
+    let fuzzy_set: FuzzySet = serde_json::from_str(fuzzy_set_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid fuzzy set: {}", e)))?;
     
-    let membership = engine.calculate_membership(value, &fuzzy_set.name)?;
+    let engine = FuzzyInferenceEngine::new();
+    let membership = engine.calculate_membership(value, &fuzzy_set.name)
+        .unwrap_or(0.0);
+    
     Ok(membership)
 }
 
@@ -488,23 +504,32 @@ pub fn py_fuzzy_inference(
     fuzzy_sets_json: &str,
     input_variables_json: &str,
 ) -> PyResult<String> {
-    let rules: Vec<FuzzyRule> = serde_json::from_str(rules_json)?;
-    let fuzzy_sets: Vec<FuzzySet> = serde_json::from_str(fuzzy_sets_json)?;
-    let input_variables: HashMap<String, f64> = serde_json::from_str(input_variables_json)?;
+    let rules: Vec<FuzzyRule> = serde_json::from_str(rules_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid rules: {}", e)))?;
+    
+    let fuzzy_sets: Vec<FuzzySet> = serde_json::from_str(fuzzy_sets_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid fuzzy sets: {}", e)))?;
+    
+    let input_variables: HashMap<String, f64> = serde_json::from_str(input_variables_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid input variables: {}", e)))?;
     
     let mut engine = FuzzyInferenceEngine::new();
     
-    // Add fuzzy sets
+    // Add fuzzy sets to engine
     for fuzzy_set in fuzzy_sets {
-        engine.add_fuzzy_set(fuzzy_set)?;
+        engine.add_fuzzy_set(fuzzy_set)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
     }
     
-    // Add rules
+    // Set the rules
     engine.rules = rules;
     
-    let result = engine.fuzzy_inference(&input_variables)?;
-    let json_result = serde_json::to_string(&result)?;
-    Ok(json_result)
+    // Perform inference
+    let result = engine.fuzzy_inference(&input_variables)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+    
+    serde_json::to_string(&result)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
 }
 
 #[pyfunction]
@@ -513,10 +538,28 @@ pub fn py_defuzzify(
     activation_level: f64,
     fuzzy_set_json: &str,
 ) -> PyResult<f64> {
-    let fuzzy_set: FuzzySet = serde_json::from_str(fuzzy_set_json)?;
-    let mut engine = FuzzyInferenceEngine::new();
-    engine.add_fuzzy_set(fuzzy_set)?;
+    let fuzzy_set: FuzzySet = serde_json::from_str(fuzzy_set_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid fuzzy set: {}", e)))?;
     
-    let result = engine.defuzzify(variable, activation_level)?;
+    let mut engine = FuzzyInferenceEngine::new();
+    engine.add_fuzzy_set(fuzzy_set)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+    
+    let result = engine.defuzzify(variable, activation_level)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+    
     Ok(result)
+}
+
+#[pyfunction]
+pub fn py_combine_evidence(evidence_list_json: &str) -> PyResult<String> {
+    let evidence_list: Vec<FuzzyEvidence> = serde_json::from_str(evidence_list_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid evidence list: {}", e)))?;
+    
+    let engine = FuzzyInferenceEngine::new();
+    let combined_evidence = engine.combine_evidence(&evidence_list)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+    
+    serde_json::to_string(&combined_evidence)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
 } 

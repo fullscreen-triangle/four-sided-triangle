@@ -961,13 +961,19 @@ impl MetacognitiveOptimizer {
 
 // Python FFI functions
 
+/// Generate a unique optimizer ID
+fn generate_optimizer_id() -> String {
+    format!("optimizer_{}", rand::random::<u64>())
+}
+
 #[pyfunction]
 pub fn py_create_optimizer() -> PyResult<String> {
     let optimizer = MetacognitiveOptimizer::new();
-    // Return a unique identifier for the optimizer
-    let optimizer_id = format!("optimizer_{}", rand::random::<u64>());
+    let optimizer_id = generate_optimizer_id();
     
-    // In a real implementation, you'd store the optimizer in a global registry
+    let mut optimizers = crate::METACOGNITIVE_OPTIMIZERS.lock().unwrap();
+    optimizers.insert(optimizer_id.clone(), optimizer);
+    
     Ok(optimizer_id)
 }
 
@@ -976,21 +982,19 @@ pub fn py_optimize_pipeline(
     optimizer_id: &str,
     context_json: &str,
 ) -> PyResult<String> {
-    let context: DecisionContext = serde_json::from_str(context_json)?;
+    let context: DecisionContext = serde_json::from_str(context_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid context JSON: {}", e)))?;
     
-    // In a real implementation, you'd retrieve the optimizer from registry
-    // and call optimize_pipeline
-    let dummy_result = OptimizationResult {
-        selected_strategies: vec!["query_complexity_adaptation".to_string()],
-        confidence_scores: [("query_complexity_adaptation".to_string(), 0.8)].iter().cloned().collect(),
-        expected_improvements: [("output_quality".to_string(), 0.2)].iter().cloned().collect(),
-        resource_allocation: [("processing_time".to_string(), 1.5)].iter().cloned().collect(),
-        risk_assessment: [("strategy_risk".to_string(), 0.3)].iter().cloned().collect(),
-        recommendations: vec!["Apply adaptive query processing".to_string()],
-    };
-    
-    let json_result = serde_json::to_string(&dummy_result)?;
-    Ok(json_result)
+    let mut optimizers = crate::METACOGNITIVE_OPTIMIZERS.lock().unwrap();
+    if let Some(optimizer) = optimizers.get_mut(optimizer_id) {
+        let result = optimizer.optimize_pipeline(&context)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        
+        serde_json::to_string(&result)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Optimizer not found"))
+    }
 }
 
 #[pyfunction]
@@ -999,11 +1003,21 @@ pub fn py_evaluate_decision(
     context_json: &str,
     outcome_json: &str,
 ) -> PyResult<f64> {
-    let _context: DecisionContext = serde_json::from_str(context_json)?;
-    let _outcome: HashMap<String, f64> = serde_json::from_str(outcome_json)?;
+    let context: DecisionContext = serde_json::from_str(context_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid context JSON: {}", e)))?;
     
-    // In a real implementation, you'd retrieve the optimizer and evaluate
-    Ok(0.75) // Dummy score
+    let outcome: HashMap<String, f64> = serde_json::from_str(outcome_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid outcome JSON: {}", e)))?;
+    
+    let optimizers = crate::METACOGNITIVE_OPTIMIZERS.lock().unwrap();
+    if let Some(optimizer) = optimizers.get(optimizer_id) {
+        let score = optimizer.evaluate_decision(&context, &outcome)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        
+        Ok(score)
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Optimizer not found"))
+    }
 }
 
 #[pyfunction]
@@ -1013,8 +1027,28 @@ pub fn py_update_strategy(
     outcomes_json: &str,
     feedback_score: f64,
 ) -> PyResult<()> {
-    let _outcomes: HashMap<String, f64> = serde_json::from_str(outcomes_json)?;
+    let outcomes: HashMap<String, f64> = serde_json::from_str(outcomes_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid outcomes JSON: {}", e)))?;
     
-    // In a real implementation, you'd retrieve the optimizer and update strategy performance
-    Ok(())
+    let mut optimizers = crate::METACOGNITIVE_OPTIMIZERS.lock().unwrap();
+    if let Some(optimizer) = optimizers.get_mut(optimizer_id) {
+        optimizer.update_strategy_performance(request_id, &outcomes, feedback_score)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        
+        Ok(())
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Optimizer not found"))
+    }
+}
+
+#[pyfunction]
+pub fn py_get_optimizer_statistics(optimizer_id: &str) -> PyResult<String> {
+    let optimizers = crate::METACOGNITIVE_OPTIMIZERS.lock().unwrap();
+    if let Some(optimizer) = optimizers.get(optimizer_id) {
+        let stats = optimizer.get_statistics();
+        serde_json::to_string(&stats)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Optimizer not found"))
+    }
 } 

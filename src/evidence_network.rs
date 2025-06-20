@@ -905,14 +905,71 @@ impl EvidenceNetwork {
 
 // Python FFI functions
 
+/// Generate a unique network ID
+fn generate_network_id() -> String {
+    format!("network_{}", rand::random::<u64>())
+}
+
+/// Get network from global registry
+fn get_network(network_id: &str) -> Result<EvidenceNetwork> {
+    let networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    networks.get(network_id)
+        .cloned()
+        .ok_or_else(|| validation_error!("Network not found"))
+}
+
+/// Update network in global registry
+fn update_network(network_id: &str, network: EvidenceNetwork) -> Result<()> {
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    networks.insert(network_id.to_string(), network);
+    Ok(())
+}
+
 #[pyfunction]
 pub fn py_create_evidence_network() -> PyResult<String> {
     let network = EvidenceNetwork::new();
-    // Return a unique identifier for the network
-    let network_id = format!("network_{}", rand::random::<u64>());
+    let network_id = generate_network_id();
     
-    // In a real implementation, you'd store the network in a global registry
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    networks.insert(network_id.clone(), network);
+    
     Ok(network_id)
+}
+
+#[pyfunction]
+pub fn py_add_node(
+    network_id: &str,
+    node_json: &str,
+) -> PyResult<()> {
+    let node: EvidenceNode = serde_json::from_str(node_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid node JSON: {}", e)))?;
+    
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get_mut(network_id) {
+        network.add_node(node)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        Ok(())
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
+}
+
+#[pyfunction]
+pub fn py_add_edge(
+    network_id: &str,
+    edge_json: &str,
+) -> PyResult<()> {
+    let edge: EvidenceEdge = serde_json::from_str(edge_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid edge JSON: {}", e)))?;
+    
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get_mut(network_id) {
+        network.add_edge(edge)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        Ok(())
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
 }
 
 #[pyfunction]
@@ -921,11 +978,17 @@ pub fn py_update_node_evidence(
     node_id: &str,
     evidence_json: &str,
 ) -> PyResult<()> {
-    let evidence: FuzzyEvidence = serde_json::from_str(evidence_json)?;
+    let evidence: FuzzyEvidence = serde_json::from_str(evidence_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid evidence JSON: {}", e)))?;
     
-    // In a real implementation, you'd retrieve the network from registry
-    // and update it
-    Ok(())
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get_mut(network_id) {
+        network.update_node_evidence(node_id, evidence)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        Ok(())
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
 }
 
 #[pyfunction]
@@ -933,16 +996,22 @@ pub fn py_propagate_evidence(
     network_id: &str,
     algorithm: &str,
 ) -> PyResult<()> {
-    let _algorithm = match algorithm {
+    let propagation_algorithm = match algorithm {
         "belief_propagation" => PropagationAlgorithm::BeliefPropagation,
         "variational_bayes" => PropagationAlgorithm::VariationalBayes,
         "mcmc" => PropagationAlgorithm::MarkovChainMonteCarlo,
         "particle_filter" => PropagationAlgorithm::ParticleFilter,
-        _ => PropagationAlgorithm::BeliefPropagation,
+        _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Unknown propagation algorithm")),
     };
     
-    // In a real implementation, you'd retrieve the network and propagate
-    Ok(())
+    let mut networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get_mut(network_id) {
+        network.propagate_evidence(propagation_algorithm)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        Ok(())
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
 }
 
 #[pyfunction]
@@ -950,17 +1019,29 @@ pub fn py_query_network(
     network_id: &str,
     query_json: &str,
 ) -> PyResult<String> {
-    let query: NetworkQuery = serde_json::from_str(query_json)?;
+    let query: NetworkQuery = serde_json::from_str(query_json)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid query JSON: {}", e)))?;
     
-    // In a real implementation, you'd retrieve the network and execute query
-    let dummy_result = QueryResult {
-        probabilities: HashMap::new(),
-        confidence_intervals: HashMap::new(),
-        explanation: "Query executed".to_string(),
-        uncertainty_measures: HashMap::new(),
-        sensitivity_scores: HashMap::new(),
-    };
-    
-    let json_result = serde_json::to_string(&dummy_result)?;
-    Ok(json_result)
+    let networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get(network_id) {
+        let result = network.query(&query)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        
+        serde_json::to_string(&result)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
+}
+
+#[pyfunction]
+pub fn py_get_network_statistics(network_id: &str) -> PyResult<String> {
+    let networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
+    if let Some(network) = networks.get(network_id) {
+        let stats = network.get_network_statistics();
+        serde_json::to_string(&stats)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
+    } else {
+        Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>("Network not found"))
+    }
 } 
