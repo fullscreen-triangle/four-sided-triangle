@@ -101,7 +101,8 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_fuzzy_logic, m)?)?;
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_evidence_network, m)?)?;
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_metacognitive_optimization, m)?)?;
-    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_pipeline_optimization, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_optimize_pipeline, m)?)?;
+    m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_get_status, m)?)?;
     
     Ok(())
 } 

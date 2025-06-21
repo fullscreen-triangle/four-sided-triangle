@@ -1024,7 +1024,7 @@ pub fn py_query_network(
     
     let networks = crate::EVIDENCE_NETWORKS.lock().unwrap();
     if let Some(network) = networks.get(network_id) {
-        let result = network.query(&query)
+        let result = network.query_network(&query)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
         
         serde_json::to_string(&result)
