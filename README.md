@@ -13,6 +13,8 @@ The system's metacognitive orchestration layer manages an 8-stage specialized pi
 
 The system implements a high-performance Rust core that handles computationally intensive operations, including fuzzy evidence networks, Bayesian inference, and metacognitive optimization. This Rust integration provides 10-50x performance improvements over Python implementations while maintaining full API compatibility.
 
+Additionally, the system now supports **Turbulance DSL integration** - a revolutionary approach that allows researchers to write complete research protocols in structured scientific language rather than fragmented conversational queries. This transforms Four-Sided Triangle from a conversational RAG system into a comprehensive research execution platform.
+
 ## Why Four-Sided Triangle Is Necessary
 
 Traditional AI approaches face several critical limitations when dealing with domain-expert knowledge:
@@ -26,6 +28,63 @@ Traditional AI approaches face several critical limitations when dealing with do
 4. **Quality Consistency Issues**: Ensuring consistent quality in outputs across diverse problem spaces requires sophisticated monitoring and evaluation protocols absent in simple pipeline approaches.
 
 Four-Sided Triangle addresses these challenges through its specialized architecture, providing a comprehensive solution for complex knowledge extraction and reasoning tasks.
+
+## Turbulance DSL Integration: From Conversational to Research Protocol
+
+### The Paradigm Shift
+
+Traditional RAG systems require users to engage in lengthy conversational exchanges:
+```
+User: "I need to analyze sprint performance"
+System: "What specific aspects?" 
+User: "Ground reaction forces during acceleration"
+System: "What data do you have?"
+... (5-10 more exchanges)
+```
+
+With Turbulance integration, users can encode their complete research methodology upfront:
+
+```turbulance
+proposition SprintPerformanceOptimization:
+    motion Hypothesis("Ground reaction force patterns reveal 400m pacing inefficiencies")
+    
+    sources:
+        local("athlete_data/force_measurements.csv")
+        domain_expert("sprint_biomechanics")
+    
+    within experiment:
+        given sample_size > 20:
+            item force_patterns = analyze_grf(data)
+            item biomechanical_analysis = pipeline_stage("domain_knowledge", {
+                expert_models: ["sprint_expert", "biomechanics_expert"],
+                focus: "force_production_efficiency"
+            })
+            item optimization_protocol = pipeline_stage("reasoning_optimization", {
+                objective: "minimize_energy_cost_maximize_power"
+            })
+            ensure statistical_significance(results) < 0.05
+
+funxn execute_analysis():
+    return complete_research_protocol()
+```
+
+### Key Advantages
+
+1. **Complete Context Awareness**: Your specialized models receive the full experimental context upfront
+2. **Optimal Pipeline Routing**: The system can choose the most efficient path through your 8 stages
+3. **Reproducible Science**: The Turbulance script becomes documentation of the research methodology
+4. **Parallel Execution**: Independent parts of the research can be processed simultaneously
+5. **Enhanced Quality Control**: Process monitor can evaluate against stated research objectives
+
+### Architecture Integration
+
+Turbulance scripts are compiled into Four-Sided Triangle execution plans through:
+
+- **Turbulance Parser** (Rust): Parses `.trb` files into semantic AST
+- **Network Graph Compiler** (Rust): Generates `.fs` files (consciousness state visualization)
+- **Resource Orchestrator** (Rust): Creates `.ghd` files (dependency management)
+- **Decision Memory** (Rust): Produces `.hre` files (metacognitive tracking)
+- **Pipeline Integration**: Maps Turbulance constructs to existing 8-stage pipeline
 
 ## System Architecture: Detailed Explanation
 
@@ -601,6 +660,15 @@ four-sided-triangle/
 │   ├── quality_assessment.rs     # Quality assessment
 │   ├── optimization.rs           # Optimization algorithms
 │   ├── throttle_detection.rs     # Throttle detection
+│   ├── turbulance/               # Turbulance DSL processing
+│   │   ├── mod.rs                # Turbulance module exports
+│   │   ├── parser.rs             # Turbulance syntax parser
+│   │   ├── ast.rs                # Abstract syntax tree definitions
+│   │   ├── compiler.rs           # Turbulance to pipeline compiler
+│   │   ├── fs_generator.rs       # Network graph (.fs) generator
+│   │   ├── ghd_generator.rs      # Resource dependencies (.ghd) generator
+│   │   ├── hre_generator.rs      # Decision memory (.hre) generator
+│   │   └── integration.rs        # Four-Sided Triangle integration
 │   ├── error.rs                  # Error handling
 │   └── utils.rs                  # Utility functions
 ├── tests/                        # Test suite
