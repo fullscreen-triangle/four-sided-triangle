@@ -92,6 +92,38 @@ frontend/public/*.hdr
 frontend/public/logo.svg
 frontend/public/logo.png
 
+# Rust build artifacts
+target/
+Cargo.lock
+*.rs.bk
+*.pdb
+
+# Rust-specific
+**/*.rs.bk
+.rustc_info.json
+*.d
+*.rlib
+*.rmeta
+*.crate
+*.exe
+*.dll
+*.dylib
+*.so
+*.a
+*.lib
+
+# Rust analyzer
+.rust-analyzer/
+rust-analyzer.exe
+
+# Cargo
+Cargo.lock
+
+# Build artifacts
+build/
+dist/
+out/
+
 # Large media files
 *.mp4
 *.webm

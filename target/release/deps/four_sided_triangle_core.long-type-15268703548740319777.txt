@@ -1,1 +1,0 @@
-(&HashMap<std::string::String, f64>, &std::option::Option<HashMap<std::string::String, f64>>)
