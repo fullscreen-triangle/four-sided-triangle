@@ -18,6 +18,8 @@ Four-Sided Triangle is a **sophisticated multi-model optimization pipeline** des
 
 The system's **metacognitive orchestration layer** manages an 8-stage specialized pipeline, dynamically selecting between LLM-based reasoning and traditional mathematical solvers based on problem characteristics. This hybrid approach allows the system to handle both fuzzy reasoning tasks and precise mathematical optimization problems with equal proficiency.
 
+Additionally, the system now supports **[Turbulance DSL integration](turbulance-integration)** - a revolutionary approach that allows researchers to write complete research protocols in structured scientific language rather than fragmented conversational queries.
+
 ---
 
 ## 🚀 Why Four-Sided Triangle Is Necessary
@@ -179,6 +181,8 @@ curl http://localhost:8000/health
       <li><a href="getting-started">Getting Started Guide</a></li>
       <li><a href="architecture">System Architecture</a></li>
       <li><a href="pipeline">Pipeline Architecture</a></li>
+      <li><a href="turbulance-integration">Turbulance DSL Integration</a></li>
+      <li><a href="turbulance-quick-reference">Turbulance Quick Reference</a></li>
       <li><a href="api-reference">API Reference</a></li>
     </ul>
   </div>
@@ -219,6 +223,7 @@ curl http://localhost:8000/health
 ## 🏆 Key Features
 
 - **🧠 Metacognitive Orchestration**: Central orchestration layer managing the entire pipeline
+- **🔬 Turbulance DSL Integration**: Write complete research protocols instead of fragmented conversations
 - **🔧 Modular Architecture**: Each component is independent and can be modified or replaced
 - **⚡ Advanced Optimization**: Sophisticated optimization techniques at multiple levels
 - **✅ Quality Assurance**: Comprehensive quality checks and verification at each stage
