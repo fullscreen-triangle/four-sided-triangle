@@ -23,6 +23,9 @@ pub mod autobahn_bridge;
 // Error types
 pub mod error;
 
+// Turbulance DSL processing modules
+pub mod turbulance;
+
 // Re-exports for convenience
 pub use error::{FourSidedTriangleError, Result};
 
