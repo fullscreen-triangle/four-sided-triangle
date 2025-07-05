@@ -536,4 +536,13 @@ pub fn py_validate_turbulance_syntax(script_content: &str) -> PyResult<bool> {
         Ok(_) => Ok(true),
         Err(_) => Ok(false),
     }
+}
+
+#[pyfunction]
+pub fn py_get_parser_statistics() -> PyResult<String> {
+    let parser = TurbulanceParser::new();
+    let stats = parser.get_statistics();
+    
+    serde_json::to_string(&stats)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Serialization failed: {}", e)))
 } 

@@ -107,5 +107,19 @@ fn four_sided_triangle_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_optimize_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(autobahn_bridge::py_autobahn_get_status, m)?)?;
     
+    // Register Turbulance DSL functions
+    m.add_function(wrap_pyfunction!(turbulance::parser::py_parse_turbulance_script, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::parser::py_get_parser_statistics, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::compiler::py_compile_turbulance_protocol, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::orchestrator::py_execute_turbulance_protocol, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::orchestrator::py_get_orchestrator_statistics, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::annotation::py_annotate_turbulance_script, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::annotation::py_get_annotator_statistics, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::processor::py_create_turbulance_processor, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::processor::py_process_turbulance_script, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::processor::py_get_processor_statistics, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::processor::py_update_processor_config, m)?)?;
+    m.add_function(wrap_pyfunction!(turbulance::processor::py_remove_processor, m)?)?;
+    
     Ok(())
 } 
