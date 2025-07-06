@@ -8,7 +8,7 @@ use crate::{validation_error};
 use super::parser::{TurbulanceScript, TurbulanceNode, NodeType, TurbulanceValue};
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 
 /// Execution mode for compiled protocols
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,6 +98,12 @@ pub struct TurbulanceCompiler {
     protocols_compiled: usize,
     total_steps_generated: usize,
     optimization_hits: usize,
+}
+
+impl Default for TurbulanceCompiler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TurbulanceCompiler {

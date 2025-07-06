@@ -4,7 +4,7 @@
 //! from original script to annotated results with execution outputs.
 
 use crate::error::{FourSidedTriangleError, Result};
-use crate::{validation_error, computational_error};
+use crate::{validation_error};
 use super::parser::{TurbulanceParser, TurbulanceScript};
 use super::compiler::TurbulanceCompiler;
 use super::orchestrator::TurbulanceOrchestrator;
@@ -91,6 +91,12 @@ pub struct TurbulanceProcessor {
     protocols_processed: usize,
     total_processing_time: f64,
     successful_protocols: usize,
+}
+
+impl Default for TurbulanceProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TurbulanceProcessor {

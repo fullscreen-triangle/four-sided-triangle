@@ -87,6 +87,12 @@ pub struct TurbulanceParser {
     parse_errors: usize,
 }
 
+impl Default for TurbulanceParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TurbulanceParser {
     pub fn new() -> Self {
         Self {
@@ -150,7 +156,7 @@ impl TurbulanceParser {
             self.manage_context_stack(&mut current_context, &mut context_stack, &mut indentation_stack, indentation);
 
             match self.parse_line(trimmed_line, line_number, &current_context) {
-                Ok(mut node) => {
+                Ok(node) => {
                     // Categorize nodes
                     match node.node_type {
                         NodeType::Proposition => {
@@ -200,52 +206,61 @@ impl TurbulanceParser {
         Ok(script)
     }
 
-    /// Parse a single line of Turbulance code
-    fn parse_line(&self, line: &str, line_number: usize, context: &ParseContext) -> Result<TurbulanceNode> {
-        // Try different patterns in order of likelihood
-        
-        // Proposition declaration
-        if let Some(captures) = self.proposition_regex.captures(line) {
-            let name = captures.get(1).unwrap().as_str().to_string();
+    /// Parse a single line into a TurbulanceNode
+    fn parse_line(&self, line: &str, line_number: usize, _context: &ParseContext) -> Result<TurbulanceNode> {
+        // Comment
+        if self.comment_regex.is_match(line) {
             return Ok(TurbulanceNode {
-                node_type: NodeType::Proposition,
+                node_type: NodeType::Comment,
                 line_number,
                 content: line.to_string(),
-                name: Some(name),
+                name: None,
                 parameters: HashMap::new(),
                 children: Vec::new(),
                 dependencies: Vec::new(),
             });
         }
 
-        // Hypothesis declaration
+        // Proposition
+        if let Some(captures) = self.proposition_regex.captures(line) {
+            let name = captures.get(1).unwrap().as_str();
+            return Ok(TurbulanceNode {
+                node_type: NodeType::Proposition,
+                line_number,
+                content: line.to_string(),
+                name: Some(name.to_string()),
+                parameters: HashMap::new(),
+                children: Vec::new(),
+                dependencies: Vec::new(),
+            });
+        }
+
+        // Hypothesis
         if let Some(captures) = self.hypothesis_regex.captures(line) {
-            let hypothesis_text = captures.get(1).unwrap().as_str().to_string();
+            let hypothesis = captures.get(1).unwrap().as_str();
             let mut parameters = HashMap::new();
-            parameters.insert("text".to_string(), TurbulanceValue::String(hypothesis_text));
+            parameters.insert("hypothesis".to_string(), TurbulanceValue::String(hypothesis.to_string()));
             
             return Ok(TurbulanceNode {
                 node_type: NodeType::Hypothesis,
                 line_number,
                 content: line.to_string(),
-                name: Some("hypothesis".to_string()),
+                name: None,
                 parameters,
                 children: Vec::new(),
                 dependencies: Vec::new(),
             });
         }
 
-        // Pipeline stage call
+        // Pipeline stage
         if let Some(captures) = self.pipeline_stage_regex.captures(line) {
-            let variable_name = captures.get(1).unwrap().as_str().to_string();
-            let stage_name = captures.get(2).unwrap().as_str().to_string();
+            let var_name = captures.get(1).unwrap().as_str();
+            let stage_name = captures.get(2).unwrap().as_str();
             let config_str = captures.get(3).map(|m| m.as_str()).unwrap_or("");
-            
+
             let mut parameters = HashMap::new();
-            parameters.insert("stage".to_string(), TurbulanceValue::String(stage_name));
-            parameters.insert("variable".to_string(), TurbulanceValue::String(variable_name.clone()));
+            parameters.insert("stage".to_string(), TurbulanceValue::String(stage_name.to_string()));
             
-            // Parse configuration object
             if !config_str.is_empty() {
                 let config = self.parse_config_object(config_str)?;
                 parameters.insert("config".to_string(), TurbulanceValue::Object(config));
@@ -255,43 +270,43 @@ impl TurbulanceParser {
                 node_type: NodeType::PipelineStage,
                 line_number,
                 content: line.to_string(),
-                name: Some(variable_name),
+                name: Some(var_name.to_string()),
                 parameters,
                 children: Vec::new(),
                 dependencies: Vec::new(),
             });
         }
 
-        // Function declaration
+        // Function definition
         if let Some(captures) = self.function_regex.captures(line) {
-            let function_name = captures.get(1).unwrap().as_str().to_string();
+            let func_name = captures.get(1).unwrap().as_str();
             let params_str = captures.get(2).unwrap().as_str();
             
             let mut parameters = HashMap::new();
             if !params_str.is_empty() {
-                let param_list = self.parse_parameter_list(params_str)?;
-                parameters.insert("parameters".to_string(), TurbulanceValue::Array(param_list));
+                let params = self.parse_parameter_list(params_str)?;
+                parameters.insert("parameters".to_string(), TurbulanceValue::Array(params));
             }
 
             return Ok(TurbulanceNode {
                 node_type: NodeType::Function,
                 line_number,
                 content: line.to_string(),
-                name: Some(function_name),
+                name: Some(func_name.to_string()),
                 parameters,
                 children: Vec::new(),
                 dependencies: Vec::new(),
             });
         }
 
-        // Conditional statements
+        // Conditional logic
         if let Some(captures) = self.conditional_regex.captures(line) {
-            let condition_type = captures.get(1).unwrap().as_str().to_string();
-            let condition_expr = captures.get(2).unwrap().as_str().to_string();
+            let condition_type = captures.get(1).unwrap().as_str();
+            let condition = captures.get(2).unwrap().as_str();
             
             let mut parameters = HashMap::new();
-            parameters.insert("type".to_string(), TurbulanceValue::String(condition_type));
-            parameters.insert("expression".to_string(), TurbulanceValue::String(condition_expr));
+            parameters.insert("condition_type".to_string(), TurbulanceValue::String(condition_type.to_string()));
+            parameters.insert("condition".to_string(), TurbulanceValue::String(condition.to_string()));
 
             return Ok(TurbulanceNode {
                 node_type: NodeType::Conditional,
@@ -304,20 +319,20 @@ impl TurbulanceParser {
             });
         }
 
-        // Data source declarations
+        // Data source
         if let Some(captures) = self.data_source_regex.captures(line) {
-            let source_type = captures.get(1).unwrap().as_str().to_string();
-            let source_path = captures.get(2).unwrap().as_str().to_string();
+            let source_type = captures.get(1).unwrap().as_str();
+            let source_name = captures.get(2).unwrap().as_str();
             
             let mut parameters = HashMap::new();
-            parameters.insert("type".to_string(), TurbulanceValue::String(source_type));
-            parameters.insert("path".to_string(), TurbulanceValue::String(source_path));
+            parameters.insert("source_type".to_string(), TurbulanceValue::String(source_type.to_string()));
+            parameters.insert("source_name".to_string(), TurbulanceValue::String(source_name.to_string()));
 
             return Ok(TurbulanceNode {
                 node_type: NodeType::DataSource,
                 line_number,
                 content: line.to_string(),
-                name: None,
+                name: Some(source_name.to_string()),
                 parameters,
                 children: Vec::new(),
                 dependencies: Vec::new(),
@@ -326,18 +341,18 @@ impl TurbulanceParser {
 
         // Variable assignment
         if let Some(captures) = self.variable_regex.captures(line) {
-            let var_name = captures.get(1).unwrap().as_str().to_string();
-            let var_value_str = captures.get(2).unwrap().as_str();
+            let var_name = captures.get(1).unwrap().as_str();
+            let value_str = captures.get(2).unwrap().as_str();
             
             let mut parameters = HashMap::new();
-            let value = self.parse_value(var_value_str)?;
+            let value = self.parse_value(value_str)?;
             parameters.insert("value".to_string(), value);
 
             return Ok(TurbulanceNode {
                 node_type: NodeType::Variable,
                 line_number,
                 content: line.to_string(),
-                name: Some(var_name),
+                name: Some(var_name.to_string()),
                 parameters,
                 children: Vec::new(),
                 dependencies: Vec::new(),

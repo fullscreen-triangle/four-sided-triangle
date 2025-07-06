@@ -4,7 +4,7 @@
 //! at appropriate locations to create comprehensive documented execution traces.
 
 use crate::error::{FourSidedTriangleError, Result};
-use crate::{validation_error, computational_error};
+use crate::{validation_error};
 use super::parser::{TurbulanceScript, TurbulanceNode, TurbulanceValue};
 use super::orchestrator::{ExecutionResult, StepResult, QualityMetrics, ExecutionStatistics};
 use super::compiler::CompiledProtocol;
@@ -78,6 +78,12 @@ pub struct TurbulanceAnnotator {
     scripts_annotated: usize,
     total_annotations_added: usize,
     average_annotation_density: f64,
+}
+
+impl Default for TurbulanceAnnotator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TurbulanceAnnotator {
@@ -272,7 +278,7 @@ impl TurbulanceAnnotator {
     fn create_result_annotation(&self, step_id: &str, execution_result: &ExecutionResult) -> Result<Annotation> {
         let step_result = execution_result.step_results.iter()
             .find(|r| r.step_id == step_id)
-            .ok_or_else(|| computational_error!("Step result not found: {}", step_id))?;
+            .ok_or_else(|| validation_error!(format!("Step result not found: {}", step_id)))?;
 
         let status_indicator = match step_result.status {
             super::orchestrator::ExecutionStatus::Completed => "✓",
@@ -295,7 +301,8 @@ impl TurbulanceAnnotator {
             step_result.execution_time_seconds,
             step_result.resource_usage.cpu_cores_used,
             step_result.resource_usage.memory_gb_used,
-            step_result.status as u8,
+            format!("{:?}", step_result.status),
+            self.indent_style,
             self.indent_style,
             output_preview,
         );
@@ -316,7 +323,7 @@ impl TurbulanceAnnotator {
     fn create_quality_annotation(&self, step_id: &str, execution_result: &ExecutionResult) -> Result<Option<Annotation>> {
         let step_result = execution_result.step_results.iter()
             .find(|r| r.step_id == step_id)
-            .ok_or_else(|| computational_error!("Step result not found: {}", step_id))?;
+            .ok_or_else(|| validation_error!(format!("Step result not found: {}", step_id)))?;
 
         if self.compact_mode {
             return Ok(None);
@@ -354,7 +361,7 @@ impl TurbulanceAnnotator {
     fn create_performance_annotation(&self, step_id: &str, execution_result: &ExecutionResult) -> Result<Option<Annotation>> {
         let step_result = execution_result.step_results.iter()
             .find(|r| r.step_id == step_id)
-            .ok_or_else(|| computational_error!("Step result not found: {}", step_id))?;
+            .ok_or_else(|| validation_error!(format!("Step result not found: {}", step_id)))?;
 
         if self.compact_mode {
             return Ok(None);

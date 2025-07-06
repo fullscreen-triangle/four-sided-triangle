@@ -4,7 +4,7 @@
 //! Manages async execution, resource allocation, and result collection.
 
 use crate::error::{FourSidedTriangleError, Result};
-use crate::{validation_error, computational_error};
+use crate::{validation_error};
 use super::compiler::{CompiledProtocol, ExecutionStep, ExecutionMode, ResourceRequirements};
 use super::parser::TurbulanceValue;
 use crate::fuzzy_evidence::FuzzyEvidenceNetwork;
@@ -114,6 +114,12 @@ pub struct TurbulanceOrchestrator {
     total_steps_executed: usize,
     total_execution_time: Duration,
     successful_protocols: usize,
+}
+
+impl Default for TurbulanceOrchestrator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TurbulanceOrchestrator {
@@ -265,7 +271,7 @@ impl TurbulanceOrchestrator {
         for step_id in &protocol.execution_order {
             let step = protocol.execution_steps.iter()
                 .find(|s| s.step_id == *step_id)
-                .ok_or_else(|| computational_error!("Step not found: {}", step_id))?;
+                .ok_or_else(|| validation_error!(format!("Step not found: {}", step_id)))?;
 
             let step_result = self.execute_step(step).await?;
             
