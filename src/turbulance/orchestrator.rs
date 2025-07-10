@@ -7,7 +7,7 @@ use crate::error::{FourSidedTriangleError, Result};
 use crate::{validation_error};
 use super::compiler::{CompiledProtocol, ExecutionStep, ExecutionMode, ResourceRequirements};
 use super::parser::TurbulanceValue;
-use crate::fuzzy_evidence::FuzzyEvidenceNetwork;
+use crate::fuzzy_evidence::FuzzyInferenceEngine;
 use crate::evidence_network::EvidenceNetwork;
 use crate::bayesian::BayesianEvaluator;
 use crate::metacognitive_optimizer::MetacognitiveOptimizer;
@@ -104,7 +104,7 @@ pub struct TurbulanceOrchestrator {
     running_protocols: Arc<RwLock<HashMap<String, ExecutionResult>>>,
     
     // Four-Sided Triangle integration
-    fuzzy_evidence: Arc<RwLock<FuzzyEvidenceNetwork>>,
+    fuzzy_evidence: Arc<RwLock<FuzzyInferenceEngine>>,
     evidence_network: Arc<RwLock<EvidenceNetwork>>,
     bayesian_evaluator: Arc<RwLock<BayesianEvaluator>>,
     metacognitive_optimizer: Arc<RwLock<MetacognitiveOptimizer>>,
@@ -135,7 +135,7 @@ impl TurbulanceOrchestrator {
         Self {
             resource_pool,
             running_protocols: Arc::new(RwLock::new(HashMap::new())),
-            fuzzy_evidence: Arc::new(RwLock::new(FuzzyEvidenceNetwork::new())),
+            fuzzy_evidence: Arc::new(RwLock::new(FuzzyInferenceEngine::new())),
             evidence_network: Arc::new(RwLock::new(EvidenceNetwork::new())),
             bayesian_evaluator: Arc::new(RwLock::new(BayesianEvaluator::new())),
             metacognitive_optimizer: Arc::new(RwLock::new(MetacognitiveOptimizer::new())),
@@ -639,10 +639,14 @@ impl TurbulanceOrchestrator {
             total_quality / step_results.len() as f64
         };
 
-        let bottleneck_stages = step_results.iter()
-            .filter(|r| r.execution_time_seconds > 30.0) // Steps taking more than 30 seconds
-            .map(|r| r.step_id.clone())
-            .collect();
+        // Identify bottleneck stages
+        let bottleneck_stages = {
+            let mut stages_by_time: Vec<_> = step_results.iter()
+                .map(|r| (r.step_id.clone(), r.execution_time_seconds))
+                .collect();
+            stages_by_time.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            stages_by_time.into_iter().take(3).map(|(id, _)| id).collect()
+        };
 
         ExecutionStatistics {
             steps_completed,
@@ -652,6 +656,90 @@ impl TurbulanceOrchestrator {
             average_step_quality,
             bottleneck_stages,
         }
+    }
+
+    /// Update internal statistics after protocol execution
+    fn update_statistics(&mut self, result: &ExecutionResult) {
+        self.protocols_executed += 1;
+        self.total_steps_executed += result.step_results.len();
+        self.total_execution_time += Duration::from_secs_f64(result.total_execution_time_seconds);
+        
+        if result.overall_status == ExecutionStatus::Completed {
+            self.successful_protocols += 1;
+        }
+    }
+
+    /// Get detailed execution statistics
+    pub fn get_detailed_statistics(&self) -> HashMap<String, serde_json::Value> {
+        let mut stats = HashMap::new();
+        
+        stats.insert("protocols_executed".to_string(), serde_json::Value::Number(self.protocols_executed.into()));
+        stats.insert("total_steps_executed".to_string(), serde_json::Value::Number(self.total_steps_executed.into()));
+        stats.insert("total_execution_time_seconds".to_string(), 
+                    serde_json::Value::Number(serde_json::Number::from_f64(self.total_execution_time.as_secs_f64()).unwrap()));
+        stats.insert("successful_protocols".to_string(), serde_json::Value::Number(self.successful_protocols.into()));
+        
+        let success_rate = if self.protocols_executed > 0 {
+            self.successful_protocols as f64 / self.protocols_executed as f64
+        } else {
+            0.0
+        };
+        stats.insert("success_rate".to_string(), serde_json::Value::Number(serde_json::Number::from_f64(success_rate).unwrap()));
+        
+        let average_execution_time = if self.protocols_executed > 0 {
+            self.total_execution_time.as_secs_f64() / self.protocols_executed as f64
+        } else {
+            0.0
+        };
+        stats.insert("average_execution_time_seconds".to_string(), 
+                    serde_json::Value::Number(serde_json::Number::from_f64(average_execution_time).unwrap()));
+        
+        stats
+    }
+
+    /// Get currently running protocols
+    pub async fn get_running_protocols(&self) -> Vec<String> {
+        let running = self.running_protocols.read().await;
+        running.keys().cloned().collect()
+    }
+
+    /// Cancel a running protocol
+    pub async fn cancel_protocol(&self, protocol_name: &str) -> Result<bool> {
+        let mut running = self.running_protocols.write().await;
+        
+        if let Some(mut result) = running.remove(protocol_name) {
+            result.overall_status = ExecutionStatus::Cancelled;
+            
+            // Update step results to cancelled
+            for step in &mut result.step_results {
+                if step.status == ExecutionStatus::Running || step.status == ExecutionStatus::Pending {
+                    step.status = ExecutionStatus::Cancelled;
+                }
+            }
+            
+            running.insert(protocol_name.to_string(), result);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Get status of a specific protocol
+    pub async fn get_protocol_status(&self, protocol_name: &str) -> Option<ExecutionStatus> {
+        let running = self.running_protocols.read().await;
+        running.get(protocol_name).map(|r| r.overall_status.clone())
+    }
+
+    /// Clean up completed protocols
+    pub async fn cleanup_completed_protocols(&self) -> usize {
+        let mut running = self.running_protocols.write().await;
+        let initial_count = running.len();
+        
+        running.retain(|_, result| {
+            !matches!(result.overall_status, ExecutionStatus::Completed | ExecutionStatus::Failed | ExecutionStatus::Cancelled)
+        });
+        
+        initial_count - running.len()
     }
 
     /// Get orchestrator statistics

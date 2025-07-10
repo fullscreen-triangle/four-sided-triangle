@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1746038861.92821 "/Users/kundai/Development/retrieval-augmentation-generation/four-sided-triangle/docs/system.tex" "system.pdf" "system" 1746038863.48819 2
+["pdflatex"] 1752065542.21734 "/Users/kundai/Development/retrieval-augmentation-generation/four-sided-triangle/docs/system.tex" "system.pdf" "system" 1752065544.99557 2
   "/Users/kundai/Development/retrieval-augmentation-generation/four-sided-triangle/docs/system.tex" 1746038781.89948 84107 e17f868e198ffc1fd794b95d6d213603 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -239,8 +239,8 @@
   "/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1737274391 5466570 e8651e7fa7bb054fee9a07d3f37faf28 ""
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1737274616 3352297 fbe539441826543ef95a57765edf3d70 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
-  "system.aux" 1746038863.38461 20080 0840b82ad35bf9a481bed153be88bc6d "pdflatex"
-  "system.out" 1746038863.38603 20879 5a3286d5d13c9c1c455abb3331000d03 "pdflatex"
+  "system.aux" 1752065544.827 20080 0840b82ad35bf9a481bed153be88bc6d "pdflatex"
+  "system.out" 1752065544.82864 20879 5a3286d5d13c9c1c455abb3331000d03 "pdflatex"
   "system.tex" 1746038781.89948 84107 e17f868e198ffc1fd794b95d6d213603 ""
   (generated)
   "system.aux"
