@@ -20,6 +20,7 @@ from app.orchestrator.interfaces import (
 from app.orchestrator.working_memory import working_memory
 from app.orchestrator.prompt_generator import prompt_generator
 from app.orchestrator.output_evaluator import output_evaluator
+from app.turbulance import TurbulanceParser, TurbulanceCompiler, TurbulanceOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,10 @@ class MetacognitiveOrchestrator(OrchestratorInterface):
         # Default quality threshold
         self._default_threshold = 0.7
         
-        logger.info("Metacognitive orchestrator initialized")
+        # Turbulance integration
+        self._turbulance_orchestrator = TurbulanceOrchestrator(self)
+        
+        logger.info("Metacognitive orchestrator initialized with Turbulance support")
     
     def register_stage(self, stage_id: str, stage: PipelineStageInterface) -> None:
         """
@@ -545,6 +549,190 @@ class MetacognitiveOrchestrator(OrchestratorInterface):
                 callback(status)
             except Exception as e:
                 logger.error(f"Error in status callback: {str(e)}")
+
+    async def execute_turbulance_protocol(self, script_content: str, protocol_name: str, 
+                                        execution_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Execute a Turbulance protocol through the Four-Sided Triangle pipeline.
+        
+        Args:
+            script_content: The Turbulance script content
+            protocol_name: Name of the protocol
+            execution_options: Optional execution configuration
+            
+        Returns:
+            Execution result with annotated script and statistics
+        """
+        start_time = time.time()
+        logger.info(f"Executing Turbulance protocol: {protocol_name}")
+        
+        try:
+            # Execute through the Turbulance orchestrator
+            result = await self._turbulance_orchestrator.execute_protocol(
+                script_content, protocol_name
+            )
+            
+            execution_time = time.time() - start_time
+            
+            # Prepare response in the standard format
+            response = {
+                "success": result.success,
+                "protocol_name": result.protocol_name,
+                "execution_time": result.execution_time,
+                "annotated_script": result.annotated_script,
+                "step_results": result.step_results,
+                "auxiliary_files": result.auxiliary_files,
+                "metadata": {
+                    "execution_type": "turbulance_protocol",
+                    "total_processing_time": execution_time,
+                    "timestamp": time.time(),
+                    "pipeline_integration": "four_sided_triangle"
+                }
+            }
+            
+            # Notify callbacks
+            self._notify_status_callbacks({
+                "type": "turbulance_protocol_completed",
+                "protocol_name": protocol_name,
+                "success": result.success,
+                "execution_time": execution_time,
+                "steps_completed": len([r for r in result.step_results if r.success]),
+                "steps_failed": len([r for r in result.step_results if not r.success])
+            })
+            
+            return response
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(f"Error executing Turbulance protocol {protocol_name}: {str(e)}", exc_info=True)
+            
+            error_response = {
+                "success": False,
+                "protocol_name": protocol_name,
+                "error": str(e),
+                "execution_time": execution_time,
+                "metadata": {
+                    "execution_type": "turbulance_protocol",
+                    "error_occurred": True,
+                    "timestamp": time.time()
+                }
+            }
+            
+            # Notify callbacks about the failure
+            self._notify_status_callbacks({
+                "type": "turbulance_protocol_failed",
+                "protocol_name": protocol_name,
+                "error": str(e),
+                "execution_time": execution_time
+            })
+            
+            return error_response
+
+    def validate_turbulance_script(self, script_content: str, protocol_name: str) -> Dict[str, Any]:
+        """
+        Validate a Turbulance script for syntax and structural errors.
+        
+        Args:
+            script_content: The Turbulance script content to validate
+            protocol_name: Name of the protocol
+            
+        Returns:
+            Validation result with errors and warnings
+        """
+        try:
+            parser = TurbulanceParser()
+            parsed_script = parser.parse_script(script_content, protocol_name)
+            
+            # Perform validation checks
+            validation_errors = []
+            warnings = []
+            
+            # Check for basic structure
+            if not parsed_script.pipeline_calls:
+                warnings.append("No pipeline stage calls found in script")
+            
+            # Check dependencies
+            for var_name, deps in parsed_script.dependencies.items():
+                for dep in deps:
+                    if dep not in parsed_script.variables and not any(
+                        call.parsed_data.get('variable') == dep for call in parsed_script.pipeline_calls
+                    ):
+                        validation_errors.append(f"Undefined dependency '{dep}' for variable '{var_name}'")
+            
+            # Check for available stages
+            available_stages = list(self._stages.keys())
+            for call in parsed_script.pipeline_calls:
+                stage_name = call.parsed_data.get('stage')
+                if stage_name and stage_name not in available_stages:
+                    validation_errors.append(f"Unknown pipeline stage '{stage_name}'")
+            
+            is_valid = len(validation_errors) == 0
+            
+            return {
+                "is_valid": is_valid,
+                "validation_errors": validation_errors,
+                "warnings": warnings,
+                "script_metrics": {
+                    "total_lines": len(script_content.split('\n')),
+                    "pipeline_calls": len(parsed_script.pipeline_calls),
+                    "variables": len(parsed_script.variables),
+                    "dependencies": len(parsed_script.dependencies),
+                    "available_stages": available_stages
+                },
+                "parsed_script": parsed_script
+            }
+            
+        except Exception as e:
+            return {
+                "is_valid": False,
+                "validation_errors": [f"Parse error: {str(e)}"],
+                "warnings": [],
+                "script_metrics": {},
+                "error": str(e)
+            }
+
+    def get_turbulance_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics from the Turbulance orchestrator.
+        
+        Returns:
+            Statistics about Turbulance protocol executions
+        """
+        try:
+            stats = self._turbulance_orchestrator.get_execution_stats()
+            return {
+                "turbulance_statistics": stats,
+                "integration_status": "active",
+                "supported_features": [
+                    "protocol_parsing",
+                    "protocol_compilation", 
+                    "protocol_execution",
+                    "result_annotation",
+                    "auxiliary_file_generation"
+                ]
+            }
+        except Exception as e:
+            logger.error(f"Error getting Turbulance statistics: {str(e)}")
+            return {
+                "turbulance_statistics": {},
+                "integration_status": "error",
+                "error": str(e)
+            }
+
+    def get_pipeline_info(self) -> Dict[str, Any]:
+        """
+        Get information about the configured pipeline stages.
+        
+        Returns:
+            Information about available stages and configuration
+        """
+        return {
+            "registered_stages": list(self._stages.keys()),
+            "pipeline_configuration": self._pipeline_config,
+            "stage_thresholds": self._thresholds,
+            "default_threshold": self._default_threshold,
+            "turbulance_integration": "enabled"
+        }
 
 # Global singleton instance
 orchestrator = MetacognitiveOrchestrator() 

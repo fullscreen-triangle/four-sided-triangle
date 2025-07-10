@@ -9,7 +9,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import router
+from app.api.endpoints import router, query_router, metrics_router, modeler_router, turbulance_router
 from app.config.settings import Settings
 
 # Configure logging
@@ -42,8 +42,12 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Include router
+    # Include routers
     app.include_router(router)
+    app.include_router(query_router)
+    app.include_router(metrics_router)
+    app.include_router(modeler_router)
+    app.include_router(turbulance_router)
     
     # Startup event
     @app.on_event("startup")

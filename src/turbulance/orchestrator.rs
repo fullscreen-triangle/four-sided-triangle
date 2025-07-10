@@ -332,7 +332,7 @@ impl TurbulanceOrchestrator {
             for step_id in group {
                 let step = protocol.execution_steps.iter()
                     .find(|s| s.step_id == *step_id)
-                    .ok_or_else(|| computational_error!("Step not found: {}", step_id))?;
+                    .ok_or_else(|| validation_error!("Step not found"))?;
 
                 let step_task = self.execute_step(step);
                 group_tasks.push(step_task);
@@ -401,7 +401,7 @@ impl TurbulanceOrchestrator {
 
         // Acquire resources
         let _cpu_permit = self.resource_pool.cpu_semaphore.acquire_many(step.resource_requirements.cpu_cores as u32).await
-            .map_err(|_| computational_error!("Failed to acquire CPU resources"))?;
+            .map_err(|_| validation_error!("Failed to acquire CPU resources"))?;
         let _memory_permit = self.resource_pool.memory_semaphore.acquire_many(step.resource_requirements.memory_gb as u32).await
             .map_err(|_| computational_error!("Failed to acquire memory resources"))?;
         let _gpu_permit = if step.resource_requirements.gpu_units > 0.0 {
