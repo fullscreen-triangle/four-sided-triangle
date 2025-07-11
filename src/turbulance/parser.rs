@@ -14,7 +14,14 @@ use crate::{validation_error};
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use regex::Regex;
+use once_cell::sync::Lazy;
+
+// Global parser instance for statistics tracking
+static GLOBAL_PARSER: Lazy<Arc<Mutex<TurbulanceParser>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(TurbulanceParser::new()))
+});
 
 /// Types of nodes in the parsed Turbulance AST
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -127,9 +134,9 @@ impl TurbulanceParser {
             dependencies: HashMap::new(),
         };
 
-        let mut current_context = ParseContext::Global;
         let mut context_stack = Vec::new();
         let mut indentation_stack = Vec::new();
+        let mut current_parent: Option<usize> = None;
 
         for (line_num, line) in lines.iter().enumerate() {
             let line_number = line_num + 1;
@@ -151,32 +158,59 @@ impl TurbulanceParser {
                 continue;
             }
 
-            // Track indentation for context management
+            // Track indentation for nested structures
             let indentation = line.len() - line.trim_start().len();
-            self.manage_context_stack(&mut current_context, &mut context_stack, &mut indentation_stack, indentation);
+            current_parent = self.update_parent_context(
+                &mut context_stack,
+                &mut indentation_stack,
+                indentation,
+                current_parent,
+            );
 
-            match self.parse_line(trimmed_line, line_number, &current_context) {
-                Ok(node) => {
+            match self.parse_line(trimmed_line, line_number) {
+                Ok(mut node) => {
+                    // Handle nested structures
+                    if let Some(parent_idx) = current_parent {
+                        if parent_idx < script.nodes.len() {
+                            script.nodes[parent_idx].children.push(node.clone());
+                        }
+                    }
+
                     // Categorize nodes
                     match node.node_type {
                         NodeType::Proposition => {
-                            current_context = ParseContext::Proposition;
-                            context_stack.push(ParseContext::Global);
+                            context_stack.push(script.nodes.len());
                             indentation_stack.push(indentation);
+                            current_parent = Some(script.nodes.len());
                             script.propositions.push(node.clone());
                         }
                         NodeType::PipelineStage => {
                             script.pipeline_calls.push(node.clone());
                             if let Some(name) = &node.name {
-                                // Extract dependencies
+                                // Extract dependencies and convert to PipelineCall value
                                 let deps = self.extract_dependencies(&node.parameters);
                                 script.dependencies.insert(name.clone(), deps);
+                                
+                                // Create PipelineCall value
+                                if let Some(TurbulanceValue::String(stage)) = node.parameters.get("stage") {
+                                    let config = if let Some(TurbulanceValue::Object(cfg)) = node.parameters.get("config") {
+                                        cfg.clone()
+                                    } else {
+                                        HashMap::new()
+                                    };
+                                    
+                                    let pipeline_call = TurbulanceValue::PipelineCall {
+                                        stage: stage.clone(),
+                                        config,
+                                    };
+                                    script.variables.insert(name.clone(), pipeline_call);
+                                }
                             }
                         }
                         NodeType::Function => {
-                            current_context = ParseContext::Function;
-                            context_stack.push(current_context);
+                            context_stack.push(script.nodes.len());
                             indentation_stack.push(indentation);
+                            current_parent = Some(script.nodes.len());
                             script.functions.push(node.clone());
                         }
                         NodeType::DataSource => {
@@ -187,6 +221,13 @@ impl TurbulanceParser {
                                 if let Some(value) = node.parameters.get("value") {
                                     script.variables.insert(name.clone(), value.clone());
                                 }
+                            }
+                        }
+                        NodeType::Conditional => {
+                            if indentation > 0 {
+                                context_stack.push(script.nodes.len());
+                                indentation_stack.push(indentation);
+                                current_parent = Some(script.nodes.len());
                             }
                         }
                         _ => {}
@@ -206,8 +247,29 @@ impl TurbulanceParser {
         Ok(script)
     }
 
+    /// Update parent context based on indentation
+    fn update_parent_context(
+        &self,
+        context_stack: &mut Vec<usize>,
+        indentation_stack: &mut Vec<usize>,
+        current_indentation: usize,
+        current_parent: Option<usize>,
+    ) -> Option<usize> {
+        // Pop contexts if we've dedented
+        while let Some(&last_indentation) = indentation_stack.last() {
+            if current_indentation <= last_indentation {
+                indentation_stack.pop();
+                context_stack.pop();
+            } else {
+                break;
+            }
+        }
+
+        context_stack.last().copied()
+    }
+
     /// Parse a single line into a TurbulanceNode
-    fn parse_line(&self, line: &str, line_number: usize, _context: &ParseContext) -> Result<TurbulanceNode> {
+    fn parse_line(&self, line: &str, line_number: usize) -> Result<TurbulanceNode> {
         // Comment
         if self.comment_regex.is_match(line) {
             return Ok(TurbulanceNode {
@@ -371,23 +433,67 @@ impl TurbulanceParser {
         })
     }
 
-    /// Parse a configuration object string
+    /// Parse a configuration object string with better error handling
     fn parse_config_object(&self, config_str: &str) -> Result<HashMap<String, TurbulanceValue>> {
         let mut config = HashMap::new();
-        
-        // Simple key-value parser for now
-        for pair in config_str.split(',') {
-            let pair = pair.trim();
-            if let Some(colon_pos) = pair.find(':') {
-                let key = pair[..colon_pos].trim().trim_matches('"');
-                let value_str = pair[colon_pos + 1..].trim();
-                
-                let value = self.parse_value(value_str)?;
-                config.insert(key.to_string(), value);
+        let mut bracket_depth = 0;
+        let mut in_quotes = false;
+        let mut current_pair = String::new();
+        let mut escape_next = false;
+
+        for ch in config_str.chars() {
+            if escape_next {
+                current_pair.push(ch);
+                escape_next = false;
+                continue;
+            }
+
+            match ch {
+                '\\' => {
+                    escape_next = true;
+                    current_pair.push(ch);
+                }
+                '"' => {
+                    in_quotes = !in_quotes;
+                    current_pair.push(ch);
+                }
+                '{' | '[' if !in_quotes => {
+                    bracket_depth += 1;
+                    current_pair.push(ch);
+                }
+                '}' | ']' if !in_quotes => {
+                    bracket_depth -= 1;
+                    current_pair.push(ch);
+                }
+                ',' if !in_quotes && bracket_depth == 0 => {
+                    self.parse_config_pair(&current_pair.trim(), &mut config)?;
+                    current_pair.clear();
+                }
+                _ => {
+                    current_pair.push(ch);
+                }
             }
         }
-        
+
+        // Handle the last pair
+        if !current_pair.trim().is_empty() {
+            self.parse_config_pair(&current_pair.trim(), &mut config)?;
+        }
+
         Ok(config)
+    }
+
+    /// Parse a single configuration key-value pair
+    fn parse_config_pair(&self, pair: &str, config: &mut HashMap<String, TurbulanceValue>) -> Result<()> {
+        if let Some(colon_pos) = pair.find(':') {
+            let key = pair[..colon_pos].trim().trim_matches('"').trim_matches('\'');
+            let value_str = pair[colon_pos + 1..].trim();
+            
+            let value = self.parse_value(value_str)?;
+            config.insert(key.to_string(), value);
+        }
+        
+        Ok(())
     }
 
     /// Parse a parameter list
@@ -404,7 +510,7 @@ impl TurbulanceParser {
         Ok(params)
     }
 
-    /// Parse a value from string representation
+    /// Parse a value from string representation with improved handling
     fn parse_value(&self, value_str: &str) -> Result<TurbulanceValue> {
         let trimmed = value_str.trim();
         
@@ -431,15 +537,60 @@ impl TurbulanceParser {
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
             let array_content = &trimmed[1..trimmed.len()-1];
             let mut array = Vec::new();
-            
-            for item in array_content.split(',') {
-                let item = item.trim();
-                if !item.is_empty() {
-                    array.push(self.parse_value(item)?);
+            let mut bracket_depth = 0;
+            let mut in_quotes = false;
+            let mut current_item = String::new();
+            let mut escape_next = false;
+
+            for ch in array_content.chars() {
+                if escape_next {
+                    current_item.push(ch);
+                    escape_next = false;
+                    continue;
                 }
+
+                match ch {
+                    '\\' => {
+                        escape_next = true;
+                        current_item.push(ch);
+                    }
+                    '"' => {
+                        in_quotes = !in_quotes;
+                        current_item.push(ch);
+                    }
+                    '[' | '{' if !in_quotes => {
+                        bracket_depth += 1;
+                        current_item.push(ch);
+                    }
+                    ']' | '}' if !in_quotes => {
+                        bracket_depth -= 1;
+                        current_item.push(ch);
+                    }
+                    ',' if !in_quotes && bracket_depth == 0 => {
+                        if !current_item.trim().is_empty() {
+                            array.push(self.parse_value(&current_item.trim())?);
+                        }
+                        current_item.clear();
+                    }
+                    _ => {
+                        current_item.push(ch);
+                    }
+                }
+            }
+
+            // Handle the last item
+            if !current_item.trim().is_empty() {
+                array.push(self.parse_value(&current_item.trim())?);
             }
             
             return Ok(TurbulanceValue::Array(array));
+        }
+        
+        // Object
+        if trimmed.starts_with('{') && trimmed.ends_with('}') {
+            let object_content = &trimmed[1..trimmed.len()-1];
+            let config = self.parse_config_object(object_content)?;
+            return Ok(TurbulanceValue::Object(config));
         }
         
         // Default to string
@@ -480,28 +631,12 @@ impl TurbulanceParser {
                     self.extract_dependencies_from_value(val, dependencies);
                 }
             }
-            _ => {}
-        }
-    }
-
-    /// Manage parsing context stack based on indentation
-    fn manage_context_stack(
-        &self,
-        current_context: &mut ParseContext,
-        context_stack: &mut Vec<ParseContext>,
-        indentation_stack: &mut Vec<usize>,
-        current_indentation: usize,
-    ) {
-        // Pop contexts if we've dedented
-        while let Some(&last_indentation) = indentation_stack.last() {
-            if current_indentation <= last_indentation {
-                indentation_stack.pop();
-                if let Some(context) = context_stack.pop() {
-                    *current_context = context;
+            TurbulanceValue::PipelineCall { config, .. } => {
+                for val in config.values() {
+                    self.extract_dependencies_from_value(val, dependencies);
                 }
-            } else {
-                break;
             }
+            _ => {}
         }
     }
 
@@ -523,20 +658,11 @@ impl TurbulanceParser {
     }
 }
 
-/// Parsing context for managing nested structures
-#[derive(Debug, Clone, Copy)]
-enum ParseContext {
-    Global,
-    Proposition,
-    Function,
-    Conditional,
-}
-
-// Python FFI functions
+// Python FFI functions using global parser state
 
 #[pyfunction]
 pub fn py_parse_turbulance_script(script_content: &str, protocol_name: &str) -> PyResult<String> {
-    let mut parser = TurbulanceParser::new();
+    let mut parser = GLOBAL_PARSER.lock().unwrap();
     let script = parser.parse_script(script_content, protocol_name)
         .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
     
@@ -555,7 +681,7 @@ pub fn py_validate_turbulance_syntax(script_content: &str) -> PyResult<bool> {
 
 #[pyfunction]
 pub fn py_get_parser_statistics() -> PyResult<String> {
-    let parser = TurbulanceParser::new();
+    let parser = GLOBAL_PARSER.lock().unwrap();
     let stats = parser.get_statistics();
     
     serde_json::to_string(&stats)

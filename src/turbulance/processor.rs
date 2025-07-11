@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 /// Configuration for Turbulance processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -219,12 +219,12 @@ impl TurbulanceProcessor {
 # Execution Mode: {:?}
 # Steps: {}
 
-{}",
+# This file contains the original Turbulance script for reference
+# See .fs, .ghd, and .hre files for compiled analysis",
             compiled_protocol.protocol_name,
             chrono::Utc::now().to_rfc3339(),
             compiled_protocol.execution_mode,
-            compiled_protocol.execution_steps.len(),
-            compiled_protocol.protocol_name
+            compiled_protocol.execution_steps.len()
         ));
         
         Ok(files)
@@ -290,10 +290,8 @@ impl TurbulanceProcessor {
 }
 
 // Global registry for processor instances (for Python FFI)
-lazy_static! {
-    static ref PROCESSOR_REGISTRY: Arc<Mutex<HashMap<String, TurbulanceProcessor>>> = 
-        Arc::new(Mutex::new(HashMap::new()));
-}
+static PROCESSOR_REGISTRY: Lazy<Arc<Mutex<HashMap<String, TurbulanceProcessor>>>> = 
+    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 /// Generate a unique processor ID
 fn generate_processor_id() -> String {
