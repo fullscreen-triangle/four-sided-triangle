@@ -1,24 +1,5 @@
 import React from "react";
-import React from 'react';
-import { useBreakpoint } from '@/utils/responsive';
 
-const Layout = ({ children, className = "" }) => {
-  const breakpoint = useBreakpoint();
-  
-  // Adjust padding and width based on screen size
-  const containerClasses = `w-full h-full inline-block z-0 bg-light dark:bg-dark p-32 
-    ${breakpoint.isMobile ? 'px-6 py-12' : ''} 
-    ${breakpoint.isTablet ? 'px-12 py-24' : ''} 
-    ${className}`;
-  
-  return (
-    <div className={containerClasses}>
-      {children}
-    </div>
-  );
-};
-
-export default Layout;
 const Layout = ({ children, className = "" }) => {
   return (
     <div
