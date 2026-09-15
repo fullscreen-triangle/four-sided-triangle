@@ -90,6 +90,11 @@
 \newcommand{\Soc}{\Sigma}
 \newcommand{\Out}{\mathcal{O}}
 \newcommand{\Cell}{\mathrm{cell}}
+\newcommand{\pot}{\kappa}
+\newcommand{\Fed}{\mathsf{F}}
+\newcommand{\Self}{\Gamma}
+\newcommand{\alloc}{\mathbf{a}}
+\newcommand{\att}{\alpha}
 \newcommand{\abs}[1]{\lvert#1\rvert}
 \newcommand{\norm}[1]{\lVert#1\rVert}
 \newcommand{\eps}{\varepsilon}
@@ -1520,6 +1525,17 @@ violations. The floor is not merely non-negative in practice, it is
 whenever a claim's only individuating structure is a single minimum-weight
 contact.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_01_floor.png}
+\caption{\textbf{The resolution floor.} (A) Separation cost against claim
+count across densities; no point falls below the floor line. (B) The
+ratio $\sigma(v)/\beta$ is supported entirely at or above $1$. (C) The
+realised floor tracks the minimum edge weight exactly. (D) The floor as a
+surface over claim count and density.}
+\label{fig:panel1}
+\end{figure*}
+
 \paragraph{Experiment 2: content and meaning flip rank.} In the
 constructed instance of \Cref{ex:true-irrelevant}, the content graph
 ranks the general textbook passage $T$ above the specific explanation $E$
@@ -1531,6 +1547,18 @@ content-optimal and meaning-optimal choices are not merely different in
 degree; they are different claims entirely, exhibited on one pair of
 fixed weights rather than asserted.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_02_content_meaning.png}
+\caption{\textbf{Content and meaning diverge.} (A) Content-graph alignment
+of $T$ and $E$ as lexical-overlap weight varies. (B) Receiver-graph
+alignment of the same two claims as the live-tie weight varies. (C) The
+alignment margin $\sigma(T)-\sigma(E)$ has opposite sign in the two
+graphs across the whole sweep. (D) The joint divergence magnitude over
+both independent weights.}
+\label{fig:panel2}
+\end{figure*}
+
 \paragraph{Experiment 3: relevance is not one number.} Holding the claim
 fixed and varying only the receiver's prior-context density from $0.0$ to
 $0.9$, the registered separation cost $\sigma(\text{target})$ moves from
@@ -1539,6 +1567,17 @@ $\beta_R\in[1.0,7.7]$, and every single registration attains its own
 graph's floor exactly. There is no density at which the registration is
 ``the'' relevance value the others approximate; each is a distinct,
 independently correct fact about a distinct receiver.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_03_receiver_relativity.png}
+\caption{\textbf{Receiver-relativity.} (A) The registered separation cost
+of a fixed claim across three receivers as context density varies. (B)
+Each receiver's own floor across the same sweep. (C) Every registration
+lies on or above the identity line against its own graph's floor. (D)
+Registration as a surface over density and context size.}
+\label{fig:panel3}
+\end{figure*}
 
 \paragraph{Experiment 4: diminishing returns are exact, and diversity
 weakly dominates repetition.} Across $400$ randomly composed catalyst
@@ -1553,6 +1592,18 @@ composite power $0.8294$ against $0.8215$ for four homogeneous repeats of
 the mean---confirming \Cref{cor:diversify}'s direction without
 overstating its size for this instance.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_04_catalysis.png}
+\caption{\textbf{Catalytic composition.} (A) Predicted versus simulated
+composite power across $400$ random chains, on the identity line. (B)
+Repeated application of a single catalyst at four power levels, each
+curve asymptoting below $1$. (C) Diverse catalysts weakly dominate
+repeated ones at matched mean power. (D) Composite power as a surface
+over chain length and per-step power.}
+\label{fig:panel4}
+\end{figure*}
+
 \paragraph{Experiment 5: exactly three, not two, not four fewer.} With
 support votes fixed at strength $0.75>\theta{=}0.5$, a single source and a
 mutually-supporting pair both fail robustness to removal of any one
@@ -1560,6 +1611,17 @@ member (a pair collapses to one unsupported voter); a $3$-cycle and a
 $4$-cycle both survive removal of any single member. The transition from
 non-robust to robust occurs exactly at the predicted boundary between two
 and three, with no intermediate case.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_05_coherence.png}
+\caption{\textbf{The coherence triangle.} (A) Robustness to single-member
+removal jumps from $0$ to $1$ exactly at coalition size three. (B) The
+robust region in (coalition size, vote strength). (C) The minimum number
+of surviving supporters after one removal grows with coalition size. (D)
+Robustness as a volume over coalition size and threshold $\theta$.}
+\label{fig:panel5}
+\end{figure*}
 
 \paragraph{Experiment 6: closure catches what threshold-crossing
 misses.} On the two-cluster construction, gate $A$ alone reaches a
@@ -1570,6 +1632,18 @@ which remains uninvoked. Running the full two-catalyst registry to
 exhaustion correctly reports \emph{contested closure} rather than looping
 or silently returning gate $A$'s answer.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_06_closure.png}
+\caption{\textbf{Closure versus a confidence threshold.} (A) The two
+gates' class signatures diverge as the $B$-cluster's internal weight
+grows. (B) Distinct classes reached grow linearly with catalysts invoked.
+(C) Gate $A$ alone clears any threshold trivially, by construction. (D)
+The class-distinctness margin as a surface over gate and internal
+weights.}
+\label{fig:panel6}
+\end{figure*}
+
 \paragraph{Experiment 7: the false friend is invisible until provoked.}
 The true-friend pair reaches full four-column quiescence at final
 demands $(0.030,0.030)$, both below the $\tau{=}0.05$ tolerance. The
@@ -1578,6 +1652,19 @@ reports perfect agreement) while its provoked demand is $5.10$, fifty
 rounds without reaching quiescence: exactly the failure central-only
 comparison is structurally blind to, and exactly what the four-column
 construction is built to expose.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_07_route_audit.png}
+\caption{\textbf{The four-column route-audit.} (A) A true-friend pair's
+residual converges below tolerance in one round. (B) A false-friend
+pair's residual plateaus far above tolerance despite matching central
+columns. (C) Central versus provoked demand for many random true- and
+false-friend pairs; false friends cluster at zero central, high provoked
+demand. (D) The maximal residual as a surface over central noise and
+provoke divergence.}
+\label{fig:panel7}
+\end{figure*}
 
 \paragraph{Experiment 8: federation floor and its product law.} Three
 receivers of individual floor $10,25,40$ (over an outcome space of
@@ -1612,6 +1699,20 @@ fresh search returns at count $11$ (value $13.0$) once five further
 committing acts have grown the graph in between: a $62.5\%$ relative
 change in the correct answer that a cache would have silently failed to
 reflect.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/panel_08_architecture.png}
+\caption{\textbf{Federation, water-filling, and history.} (A) The
+federation floor falls monotonically as receivers are added worst-first,
+tracking the running minimum individual floor exactly. (B) The
+water-filling threshold: optimal allocation rises from zero once a
+scene's entry margin exceeds the shadow price. (C) The committed count
+across a session including a rollback attempt (red), strictly increasing
+throughout. (D) The federation floor as the pointwise minimum over two
+receivers' radii with a third, fixed receiver present.}
+\label{fig:panel8}
+\end{figure*}
 
 \subsection{Scope and limitations}
 \label{sec:discussion}
@@ -1651,7 +1752,19 @@ answers provoke rather than by the surface agreement of their content.
 Implemented as a society of bounded, split-attention agents rather than a
 fixed sequential pipeline, this is the architecture we propose in place
 of retrieve-then-generate, and the one on which the accompanying
-validation suite is built.
+validation suite is built. Every quantitative prediction the theorems
+make---the exact tightness of the floor, the rank inversion between
+content and meaning, the receiver-dependence of a fixed claim's
+registration, the multiplicative saturation law, the sharp robustness
+transition at three mutually supporting sources, the gap between
+threshold-clearing and closure, the invisibility of a false friend to
+central-only comparison, the federation floor's dependence on its
+sharpest member, the exactness of water-filling where its hypothesis
+holds and its failure where it does not, and the staleness of a cached
+answer once the underlying graph has moved---was checked by direct,
+seeded computation and held without exception (\Cref{sec:validation-results}).
+The theory is not merely consistent; on every instance it was asked to
+predict, it was right.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
