@@ -1,0 +1,17 @@
+{
+  "content_and_meaning_diverge": true,
+  "content_graph_alignment": {
+    "E_specific_cause": 2.0,
+    "T_general_kinetics": 10.0,
+    "content_winner_higher_is_more_similar": "T_general_kinetics"
+  },
+  "experiment": "content_vs_meaning_divergence",
+  "interpretation": "The passage a content-similarity retriever ranks first (T, the true general textbook statement) is exactly the passage the researcher's own receiver graph ranks as farther from the live question than the actually-useful specific explanation (E). This is the formal 'true but useless' failure of the paper's introduction, constructed explicitly rather than merely asserted.",
+  "passed": true,
+  "receiver_graph_alignment": {
+    "E_specific_cause": 13.5,
+    "T_general_kinetics": 1.5,
+    "meaning_winner_higher_is_more_similar": "E_specific_cause"
+  },
+  "theorem": "Theorem 3.2 (Content and Meaning Come Apart), Example 3.1"
+}

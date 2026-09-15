@@ -1,0 +1,171 @@
+{
+  "experiment": "floor_from_noncompletability",
+  "min_observed_ratio_sigma_over_beta": 1.0,
+  "n_claim_observations": 930,
+  "n_graphs": 120,
+  "passed": true,
+  "sample_records": [
+    {
+      "beta": 3.3116632671400366,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 3.3116632671400366,
+      "trial": 0
+    },
+    {
+      "beta": 3.3116632671400366,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 1.2225011551867664,
+      "sigma": 4.0485121696682755,
+      "trial": 0
+    },
+    {
+      "beta": 3.3116632671400366,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 1.4676596010683651,
+      "sigma": 4.860394389523504,
+      "trial": 0
+    },
+    {
+      "beta": 1.4777019745402034,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.6411700753309595,
+      "sigma": 2.425160260872853,
+      "trial": 1
+    },
+    {
+      "beta": 1.4777019745402034,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 2.9092730264599878,
+      "sigma": 4.299038495676477,
+      "trial": 1
+    },
+    {
+      "beta": 1.4777019745402034,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 1.4777019745402034,
+      "trial": 1
+    },
+    {
+      "beta": 1.427806454780097,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 2.590607029642184,
+      "sigma": 3.6988854387218044,
+      "trial": 2
+    },
+    {
+      "beta": 1.427806454780097,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 1.427806454780097,
+      "trial": 2
+    },
+    {
+      "beta": 1.427806454780097,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 2.590607029642184,
+      "sigma": 3.6988854387218044,
+      "trial": 2
+    },
+    {
+      "beta": 2.6282951183031464,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.7096008774742872,
+      "sigma": 4.493335640512445,
+      "trial": 3
+    },
+    {
+      "beta": 2.6282951183031464,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 2.6282951183031464,
+      "trial": 3
+    },
+    {
+      "beta": 2.6282951183031464,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 1.0228942768308509,
+      "sigma": 2.6884680343347527,
+      "trial": 3
+    },
+    {
+      "beta": 3.4267252231730816,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 3.4267252231730816,
+      "trial": 4
+    },
+    {
+      "beta": 3.4267252231730816,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 2.280891474887717,
+      "sigma": 7.815988348318191,
+      "trial": 4
+    },
+    {
+      "beta": 3.4267252231730816,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 2.4956937688944048,
+      "sigma": 8.552056787186348,
+      "trial": 4
+    },
+    {
+      "beta": 5.85540834629621,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.1441643460600541,
+      "sigma": 6.699549461454586,
+      "trial": 5
+    },
+    {
+      "beta": 5.85540834629621,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 1.4407928851426215,
+      "sigma": 8.436430684948302,
+      "trial": 5
+    },
+    {
+      "beta": 5.85540834629621,
+      "claim": "c2",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 5.85540834629621,
+      "trial": 5
+    },
+    {
+      "beta": 1.9528234617659619,
+      "claim": "c0",
+      "n_claims": 3,
+      "ratio": 1.0,
+      "sigma": 1.9528234617659619,
+      "trial": 6
+    },
+    {
+      "beta": 1.9528234617659619,
+      "claim": "c1",
+      "n_claims": 3,
+      "ratio": 1.5787595947800355,
+      "sigma": 3.083038777174576,
+      "trial": 6
+    }
+  ],
+  "theorem": "Theorem 2.3 (Resolution Floor), Corollary 2.4 (No Exact Result)",
+  "violations": 0
+}

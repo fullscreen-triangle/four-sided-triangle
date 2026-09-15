@@ -1,0 +1,79 @@
+{
+  "all_passed": true,
+  "experiments": [
+    {
+      "elapsed_seconds": 0.6196,
+      "error": null,
+      "name": "exp01_floor",
+      "passed": true,
+      "theorem": "Theorem 2.3 (Resolution Floor), Corollary 2.4 (No Exact Result)"
+    },
+    {
+      "elapsed_seconds": 0.0016,
+      "error": null,
+      "name": "exp02_content_meaning",
+      "passed": true,
+      "theorem": "Theorem 3.2 (Content and Meaning Come Apart), Example 3.1"
+    },
+    {
+      "elapsed_seconds": 0.0261,
+      "error": null,
+      "name": "exp03_receiver_relativity",
+      "passed": true,
+      "theorem": "Theorem 4.4 (Distinct Receivers Register Distinct, Equally Correct Cells)"
+    },
+    {
+      "elapsed_seconds": 0.002,
+      "error": null,
+      "name": "exp04_multiplicative_law",
+      "passed": true,
+      "theorem": "Theorem 8.6 (Multiplicative Composition), Corollary 8.7 (Diversify, Do Not Repeat)"
+    },
+    {
+      "elapsed_seconds": 0.0009,
+      "error": null,
+      "name": "exp05_coherence_triangle",
+      "passed": true,
+      "theorem": "Theorem 8.8 (Linear Chains and Pairs Fail; a Triangle Grounds)"
+    },
+    {
+      "elapsed_seconds": 0.0015,
+      "error": null,
+      "name": "exp06_closure_vs_threshold",
+      "passed": true,
+      "theorem": "Theorem 8.10 (Closure is Strictly Stronger), Theorem 8.11 (Convergent or Contested Closure)"
+    },
+    {
+      "elapsed_seconds": 0.0018,
+      "error": null,
+      "name": "exp07_route_audit",
+      "passed": true,
+      "theorem": "Theorem 9.4 (Route-Audit Catches a False Friend)"
+    },
+    {
+      "elapsed_seconds": 0.0862,
+      "error": null,
+      "name": "exp08_federation_floor",
+      "passed": true,
+      "theorem": "Theorem 8.1 (Federation Lowers the Floor, Multiplicative Law)"
+    },
+    {
+      "elapsed_seconds": 1.9342,
+      "error": null,
+      "name": "exp09_waterfilling",
+      "passed": true,
+      "theorem": "Theorem 10.4 (Water-Filling Attention Division); non-concave failure mode"
+    },
+    {
+      "elapsed_seconds": 0.003,
+      "error": null,
+      "name": "exp10_monotone_history",
+      "passed": true,
+      "theorem": "Theorem 10.6 (Monotone History), Remark 10.7 (No Caching Across Sessions)"
+    }
+  ],
+  "finished_at": "2026-09-13T03:54:00",
+  "n_experiments": 10,
+  "n_passed": 10,
+  "started_at": "2026-09-13T03:53:57"
+}

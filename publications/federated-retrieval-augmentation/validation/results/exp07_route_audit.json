@@ -1,0 +1,27 @@
+{
+  "experiment": "four_column_route_audit",
+  "false_friend": {
+    "central_demand": 0.0,
+    "central_only_reports_agreement": true,
+    "final_demands": {
+      "central": 0.0,
+      "provoked": 5.0990195135927845
+    },
+    "four_column_detects_divergence": true,
+    "four_column_quiescent": false,
+    "trajectory_length": 50
+  },
+  "false_friend_detected_by_four_column_but_not_central_only": true,
+  "interpretation": "The true-friend pair reaches full four-column quiescence: same meaning, same provoked follow-up. The false-friend pair has IDENTICAL central columns (an endpoint-only / content-only check reports perfect agreement) yet its provoked columns encode non-equivalent conditions and the relaxation does not reach quiescence. This is the graph-theoretic content of two internal documents 'saying the same thing' while meaning different things, caught only by auditing what each answer provokes, never by comparing surface content alone.",
+  "passed": true,
+  "theorem": "Theorem 9.4 (Route-Audit Catches a False Friend)",
+  "tolerance": 0.05,
+  "true_friend": {
+    "final_demands": {
+      "central": 0.029999999999999954,
+      "provoked": 0.029999999999999954
+    },
+    "quiescent": true,
+    "trajectory_length": 1
+  }
+}

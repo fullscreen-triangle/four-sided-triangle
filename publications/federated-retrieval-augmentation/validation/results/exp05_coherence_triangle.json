@@ -1,0 +1,92 @@
+{
+  "checks": {
+    "1_source_never_robust": true,
+    "2_cycle_never_robust": true,
+    "3_cycle_is_robust": true,
+    "4_cycle_is_robust": true
+  },
+  "experiment": "coherence_requires_a_triangle",
+  "interpretation": "A single source is never robust (no incoming support at all). A mutually-supporting pair fails robustness: removing either member leaves exactly one voter, which cannot support itself. A 3-cycle at theta=0.5 with strong votes IS robust: removing any one member leaves two members who still mutually support each other above threshold. Coherence is a structural minimum of three, exactly as Theorem 8.8 proves, not one, and not two.",
+  "passed": true,
+  "theorem": "Theorem 8.8 (Linear Chains and Pairs Fail; a Triangle Grounds)",
+  "theta": 0.5,
+  "topologies": {
+    "size_1": {
+      "initially_grounded": false,
+      "n_members": 1,
+      "removal_results": [
+        {
+          "removed_index": 0,
+          "still_grounded": false
+        }
+      ],
+      "robust_to_any_single_removal": false,
+      "theta": 0.5,
+      "vote_strength": 0.75
+    },
+    "size_2_pair": {
+      "initially_grounded": true,
+      "n_members": 2,
+      "removal_results": [
+        {
+          "removed_index": 0,
+          "still_grounded": false
+        },
+        {
+          "removed_index": 1,
+          "still_grounded": false
+        }
+      ],
+      "robust_to_any_single_removal": false,
+      "theta": 0.5,
+      "vote_strength": 0.75
+    },
+    "size_3_triangle": {
+      "initially_grounded": true,
+      "n_members": 3,
+      "removal_results": [
+        {
+          "removed_index": 0,
+          "still_grounded": true
+        },
+        {
+          "removed_index": 1,
+          "still_grounded": true
+        },
+        {
+          "removed_index": 2,
+          "still_grounded": true
+        }
+      ],
+      "robust_to_any_single_removal": true,
+      "theta": 0.5,
+      "vote_strength": 0.75
+    },
+    "size_4_cycle": {
+      "initially_grounded": true,
+      "n_members": 4,
+      "removal_results": [
+        {
+          "removed_index": 0,
+          "still_grounded": true
+        },
+        {
+          "removed_index": 1,
+          "still_grounded": true
+        },
+        {
+          "removed_index": 2,
+          "still_grounded": true
+        },
+        {
+          "removed_index": 3,
+          "still_grounded": true
+        }
+      ],
+      "robust_to_any_single_removal": true,
+      "theta": 0.5,
+      "vote_strength": 0.75
+    }
+  },
+  "vote_strength_used": 0.75
+}

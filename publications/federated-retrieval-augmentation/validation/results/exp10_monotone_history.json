@@ -1,0 +1,33 @@
+{
+  "counts_over_time": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "experiment": "monotone_irreversible_history",
+  "interpretation": "The committed count is strictly monotone across every legitimate act and even across an explicit rollback attempt, which itself only ever raises the count -- confirming no operation restores a prior state. A value cached at an earlier count and returned as a 'fetch' once the graph has since grown is numerically stale relative to a fresh search against the current graph, the direct computational confirmation of Proposition 10.5's fetch-incoherence argument.",
+  "monotone_nondecreasing": true,
+  "passed": true,
+  "rollback_attempt_raised_count_never_lowered": true,
+  "stale_fetch": {
+    "answer_at_snapshot": 8.0,
+    "answers_differ": true,
+    "count_at_current": 11,
+    "count_at_snapshot": 6,
+    "counts_differ": true,
+    "fresh_answer_at_current": 13.0
+  },
+  "strictly_increasing_per_committed_act": true,
+  "theorem": "Theorem 10.6 (Monotone History), Remark 10.7 (No Caching Across Sessions)"
+}

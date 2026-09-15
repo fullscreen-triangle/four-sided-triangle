@@ -1,0 +1,24 @@
+{
+  "experiment": "federation_floor_bound",
+  "federation_floor_le_min_individual": true,
+  "federation_floor_measured": 10,
+  "individual_floors": [
+    10,
+    25,
+    40
+  ],
+  "interpretation": "The federation's realised floor (measured by brute-force search, independent of the multiplicative formula) is at or below the tightest individual receiver's floor, confirming the union construction lowers the floor. The multiplicative law for independent resolution failure is confirmed by Monte Carlo simulation of an explicitly independent failure model, agreeing with the closed-form product prediction to within sampling error.",
+  "multiplicative_law_check": {
+    "absolute_error": 7.606092569866852e-05,
+    "empirical_joint_failure_probability": 0.001345,
+    "monte_carlo_trials": 200000,
+    "per_receiver_normalised_floor": [
+      0.05025125628140704,
+      0.12562814070351758,
+      0.20100502512562815
+    ],
+    "predicted_joint_failure_probability": 0.0012689390743013315
+  },
+  "passed": true,
+  "theorem": "Theorem 8.1 (Federation Lowers the Floor, Multiplicative Law)"
+}

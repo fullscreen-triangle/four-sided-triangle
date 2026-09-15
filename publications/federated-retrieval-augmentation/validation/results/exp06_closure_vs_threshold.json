@@ -1,0 +1,15 @@
+{
+  "class_signature_A_gate": 5.0,
+  "class_signature_B_gate": 10.0,
+  "confidence_threshold_cleared_by_A_alone": true,
+  "distinct_equivalence_classes": true,
+  "experiment": "closure_vs_confidence_threshold",
+  "full_registry_reached_classes": 2,
+  "interpretation": "A_gate alone satisfies any confidence threshold trivially (a propagation's terminal alignment to its own target is always at the floor) while B_gate, not yet invoked, reaches a provably distinct class. The search is therefore NOT closed despite clearing the threshold: confidence-threshold stopping and closure are demonstrably different criteria, and closure is the stricter, correct one. Running the full registry to exhaustion correctly reports contested closure (decline), since the two gates lead to two distinct classes.",
+  "outcome": "contested_closure",
+  "passed": true,
+  "search_not_closed_despite_cleared_threshold": true,
+  "terminated_in_finite_registry": true,
+  "theorem": "Theorem 8.10 (Closure is Strictly Stronger), Theorem 8.11 (Convergent or Contested Closure)",
+  "theta_tested": 0.999999
+}

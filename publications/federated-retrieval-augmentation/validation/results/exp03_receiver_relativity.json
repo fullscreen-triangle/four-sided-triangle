@@ -1,0 +1,46 @@
+{
+  "all_registrations_attain_own_graph_floor": true,
+  "distinct_registrations_across_densities": true,
+  "experiment": "receiver_relativity",
+  "interpretation": "The identical claim registers a different separation cost as the receiver's prior context density changes (junior vs. senior researcher), and at every density the registration is a correct, floor-attaining individuation in that receiver's own graph. No single density's registration is privileged; a global, receiver-independent relevance score would have to pick one and be wrong for every other receiver.",
+  "passed": true,
+  "records": [
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.0,
+      "graph_floor_beta": 1.0,
+      "sigma_target_claim": 1.0
+    },
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.15,
+      "graph_floor_beta": 1.0,
+      "sigma_target_claim": 3.0
+    },
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.3,
+      "graph_floor_beta": 1.0,
+      "sigma_target_claim": 6.280696370750542
+    },
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.5,
+      "graph_floor_beta": 3.3591884250144353,
+      "sigma_target_claim": 7.7343264236613525
+    },
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.7,
+      "graph_floor_beta": 7.685341391355539,
+      "sigma_target_claim": 9.0
+    },
+    {
+      "attains_own_floor_bound": true,
+      "density": 0.9,
+      "graph_floor_beta": 5.6259612732503514,
+      "sigma_target_claim": 9.0
+    }
+  ],
+  "theorem": "Theorem 4.4 (Distinct Receivers Register Distinct, Equally Correct Cells)"
+}

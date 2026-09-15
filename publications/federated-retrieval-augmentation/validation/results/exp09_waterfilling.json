@@ -1,0 +1,230 @@
+{
+  "concave_case": {
+    "max_allocation_l2_error_bisection_vs_grid": 9.414237867826552e-05,
+    "max_value_error_bisection_vs_grid": 4.280851229054861e-09,
+    "n_trials": 30,
+    "sample_checks": [
+      {
+        "allocation_l2_error_bisection_vs_grid": 3.6756391890020406e-05,
+        "budget": 7.55373011835796,
+        "budget_respected": true,
+        "gains": [
+          [
+            3.452860932746885,
+            1.167836054014776
+          ],
+          [
+            1.7445798178482606,
+            2.1916089133626793
+          ],
+          [
+            2.353302046739521,
+            1.6593038383554288
+          ],
+          [
+            3.4187952900175644,
+            1.3350600219195794
+          ],
+          [
+            4.745543468494715,
+            2.2502457469868613
+          ]
+        ],
+        "n_scenes": 5,
+        "price_star": 0.6835496376718375,
+        "trial": 0,
+        "value_error_bisection_vs_grid": 2.1620927270760149e-10
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 2.141514406626413e-05,
+        "budget": 5.556421465020841,
+        "budget_respected": true,
+        "gains": [
+          [
+            3.813921569174988,
+            1.6300523011250643
+          ],
+          [
+            3.900261474328836,
+            0.8928929039915646
+          ],
+          [
+            1.952048809866131,
+            0.7773688199450366
+          ]
+        ],
+        "n_scenes": 3,
+        "price_star": 0.5230847163195464,
+        "trial": 1,
+        "value_error_bisection_vs_grid": 1.2641265811907942e-10
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 2.8045010538378103e-05,
+        "budget": 4.07493784491417,
+        "budget_respected": true,
+        "gains": [
+          [
+            1.2533102862301306,
+            2.2211018574175396
+          ],
+          [
+            4.1583797557978395,
+            2.7181599047345935
+          ],
+          [
+            4.675821700429263,
+            1.0124003006934374
+          ],
+          [
+            1.8972043015273314,
+            2.4824891243456935
+          ],
+          [
+            4.558304223052036,
+            2.4314505954595944
+          ],
+          [
+            4.645517117079798,
+            1.4913572721403914
+          ]
+        ],
+        "n_scenes": 6,
+        "price_star": 1.273837870127307,
+        "trial": 2,
+        "value_error_bisection_vs_grid": 3.4639668911040644e-10
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 3.916982613285444e-05,
+        "budget": 4.409347620697753,
+        "budget_respected": true,
+        "gains": [
+          [
+            1.7979328843593811,
+            2.7159993276981935
+          ],
+          [
+            4.517492753600708,
+            0.6369733902777117
+          ]
+        ],
+        "n_scenes": 2,
+        "price_star": 0.2788567897446612,
+        "trial": 3,
+        "value_error_bisection_vs_grid": 2.0802737310532393e-10
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 7.91512590792491e-05,
+        "budget": 9.03227696382651,
+        "budget_respected": true,
+        "gains": [
+          [
+            1.5565712756956565,
+            1.0918332827226322
+          ],
+          [
+            3.9449343951466864,
+            2.6268290488430535
+          ],
+          [
+            4.856050240899492,
+            0.5096865579715453
+          ],
+          [
+            4.057452576717743,
+            0.9941758680213884
+          ],
+          [
+            4.408785528035557,
+            1.3255417460250212
+          ]
+        ],
+        "n_scenes": 5,
+        "price_star": 0.5916461429830089,
+        "trial": 4,
+        "value_error_bisection_vs_grid": 2.944936738913384e-09
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 8.038985771115947e-06,
+        "budget": 4.583213394354882,
+        "budget_respected": true,
+        "gains": [
+          [
+            3.1590777611034353,
+            0.5436621066332493
+          ],
+          [
+            1.339346247106139,
+            1.7418541226086697
+          ],
+          [
+            4.683705276196463,
+            1.5502685619298402
+          ]
+        ],
+        "n_scenes": 3,
+        "price_star": 0.5390713596868968,
+        "trial": 5,
+        "value_error_bisection_vs_grid": 2.2510882047299674e-11
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 2.3539879717453072e-05,
+        "budget": 1.3708007148471386,
+        "budget_respected": true,
+        "gains": [
+          [
+            3.803390639418368,
+            0.8633929821207221
+          ],
+          [
+            4.758861857917557,
+            2.299088156937173
+          ]
+        ],
+        "n_scenes": 2,
+        "price_star": 1.649115643534814,
+        "trial": 6,
+        "value_error_bisection_vs_grid": 3.6394309788079227e-10
+      },
+      {
+        "allocation_l2_error_bisection_vs_grid": 9.057291012999334e-05,
+        "budget": 9.558305078411685,
+        "budget_respected": true,
+        "gains": [
+          [
+            3.2202428782947354,
+            2.0159520479289386
+          ],
+          [
+            1.597217909847192,
+            1.1707763809130043
+          ],
+          [
+            4.979535626628449,
+            2.99491067667004
+          ],
+          [
+            1.4853424986797585,
+            2.2636706568741722
+          ]
+        ],
+        "n_scenes": 4,
+        "price_star": 0.4026990075178355,
+        "trial": 7,
+        "value_error_bisection_vs_grid": 1.0205738476543047e-09
+      }
+    ],
+    "solver_agrees_with_independent_ground_truth": true
+  },
+  "experiment": "water_filling_attention_allocation",
+  "interpretation": "In the concave regime, the bisection water-filling solver matches an independent greedy grid-search ground truth to high precision across random instances, confirming Theorem 10.4. In the constructed non-concave (sigmoidal, increasing- returns) regime, concentrating the whole budget on one scene strictly beats an equal split, and the true grid optimum sits at or near an extreme allocation rather than the interior equal-marginal point water-filling would prescribe -- exactly the failure mode the manuscript flags as conditional on the diminishing-returns assumption, confirmed rather than merely asserted.",
+  "non_concave_boundary_case": {
+    "budget": 5.0,
+    "equal_split_value": 0.10980798455990966,
+    "grid_optimum_a1": 0.0,
+    "grid_optimum_beats_equal_split": true,
+    "grid_optimum_value": 4.762839913239156,
+    "optimum_is_at_or_near_extreme": true
+  },
+  "passed": true,
+  "theorem": "Theorem 10.4 (Water-Filling Attention Division); non-concave failure mode"
+}
