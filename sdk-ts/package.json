@@ -1,0 +1,41 @@
+{
+  "name": "@four-sided-triangle/individuate",
+  "version": "0.1.0",
+  "description": "Receiver-relative retrieval: individuation against a persistent receiver graph, coherence-triangle grounding, and closure — the TypeScript reference implementation of the Federated Retrieval-Augmentation paper.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sources/local-file": {
+      "types": "./dist/sources/localFile.d.ts",
+      "import": "./dist/sources/localFile.js"
+    }
+  },
+  "files": ["dist", "src", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "pdf-parse": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "pdf-parse": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}

@@ -1,0 +1,32 @@
+[package]
+name = "four-corners-worker"
+version = "0.1.0"
+edition = "2021"
+description = "Downloadable local compute worker for four-corners — pairs to a four-corners account via a one-time token, then runs individuation compute (contact graphs, coherence triangle, closure, water-filling) locally, per publications/federated-retrieval-augmentation."
+license = "MIT"
+
+[lib]
+name = "four_corners_worker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "four-corners-worker"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "fs"] }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+keyring = "2.3"
+anyhow = "1.0"
+thiserror = "1.0"
+directories = "5.0"
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[profile.release]
+lto = true
+opt-level = 3

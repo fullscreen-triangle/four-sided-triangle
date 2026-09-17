@@ -1132,7 +1132,8 @@ by a multi-part partition, never by a single internal state.
 \end{theorem}
 
 \begin{proof}
-As \Cref{thm:identity}: a nontrivial partition has, by connectedness, a
+As in the proof of the underlying identity theorem for a bounded agent: a
+nontrivial partition has, by connectedness, a
 crossing edge of weight $\ge\flo$; isomorphisms preserve edge weights and
 hence the minimum over partitions; the definition refers only to
 $\Self$, not to any scene the agent is engaged from, so scene engagement
@@ -1162,15 +1163,23 @@ $\Scene=(A_\Scene,\gamma_\Scene)$ with gain profile $\gamma_\Scene:
 $\att>0$; its value is $G(\alloc)=\sum_i\gamma_i(a_i)$.
 \end{definition}
 
+\begin{axiom}[Diminishing returns of attention---an environmental
+assumption]
+\label{ax:concave}
+Every gain profile $\gamma_i$ is concave: the first unit of attention
+committed to a scene removes at least as much purpose residual as any
+later unit. This is an assumption about the sources an agent faces, not
+a consequence of the agent's own structure; it can fail for a source
+that rewards sustained, concentrated inquiry over breadth.
+\end{axiom}
+
 \begin{theorem}[Water-filling attention division]
 \label{thm:waterfill}
-If every $\gamma_i$ is concave (diminishing returns of attention within a
-scene---an assumption about the sources an agent faces, not about the
-agent), the value-maximising allocation is characterised by a single
-price $\price\ge0$: $\gamma_i'(a_i^{\star})=\price$ if $a_i^{\star}>0$,
-$\gamma_i'(0)\le\price$ if $a_i^{\star}=0$. The agent equalises marginal
-gain across every attended scene and drops any scene whose first unit of
-attention returns less than $\price$.
+Under \Cref{ax:concave}, the value-maximising allocation is
+characterised by a single price $\price\ge0$: $\gamma_i'(a_i^{\star})
+=\price$ if $a_i^{\star}>0$, $\gamma_i'(0)\le\price$ if $a_i^{\star}=0$.
+The agent equalises marginal gain across every attended scene and drops
+any scene whose first unit of attention returns less than $\price$.
 \end{theorem}
 
 \begin{proof}
@@ -1179,6 +1188,20 @@ the KKT stationarity condition of the Lagrangian
 $\sum_i\gamma_i(a_i)-\price(\sum_i a_i-\att)+\sum_i\mu_i a_i$ gives the
 stated conditions, sufficient for the global optimum by concavity.
 \end{proof}
+
+\begin{remark}[Where water-filling fails: a non-concave source]
+\label{rem:nonconcave}
+\Cref{thm:waterfill} is exactly as strong as \Cref{ax:concave} and no
+stronger. A source that rewards sustained, concentrated attention over
+some range---an increasing-returns, sigmoid-shaped gain profile---breaks
+concavity, and the value-maximising allocation there \emph{concentrates}
+the whole budget on one scene rather than dividing it by a common price;
+water-filling's equal-marginal prescription is then not merely
+suboptimal but quantitatively wrong, as \Cref{sec:validation-results}
+confirms by direct construction. This is a property of the environment
+the agent is placed in, not a defect the agent's own architecture can
+repair.
+\end{remark}
 
 \begin{remark}[Present but preoccupied in every source at once]
 \label{rem:preoccupied}
@@ -1222,12 +1245,11 @@ distinction, contradicting the positive act floor.
 \end{theorem}
 
 \begin{proof}
-As in \Cref{thm:monotone,thm:recsearch}: an ``undo'' is itself a further
-committed act raising the count, so the count cannot decrease; a fetch
-returning a value with no committed act is a zero-act access, which by
-the positive act floor deposits nothing and hence effects no genuine
-retrieval, so the only access mode consistent with the floor is a fresh
-search against the current graph.
+An ``undo'' is itself a further committed act raising the count, so the
+count cannot decrease; a fetch returning a value with no committed act
+is a zero-act access, which by the positive act floor deposits nothing
+and hence effects no genuine retrieval, so the only access mode
+consistent with the floor is a fresh search against the current graph.
 \end{proof}
 
 \begin{remark}[Why a research assistant must not cache answers across
@@ -1236,9 +1258,10 @@ sessions]
 \Cref{thm:history}(ii) is the formal argument against a design that
 appears merely efficient: caching an answer computed at an earlier state
 of the corpus and returning it verbatim once the corpus has grown returns
-an answer appropriate to a self the system has irreversibly left, exactly
-as \Cref{prop:fetch-incoherent} of the underlying theory shows for any
-persistent agent. A system honouring this invariant re-derives its answer
+an answer appropriate to a self the system has irreversibly left, since
+no operation restores the graph to its earlier state and every
+committing act between the two counts has altered it. A system
+honouring this invariant re-derives its answer
 against the corpus as currently federated at each query, which is a
 correctness requirement, not only a freshness preference, once the corpus
 is understood to grow monotonically with the group's own work.
@@ -1450,8 +1473,8 @@ direct, exact computation: minimum cuts by maximum
 flow~\citep{fordfulkerson1956,menger1927}, water-filling by the
 Karush--Kuhn--Tucker conditions~\citep{boyd2004,kuhntucker1951}, and the
 relaxation dynamics by direct simulation on finite state spaces. We
-implement a seeded, reproducible validation suite (\Cref{sec:code})
-covering:
+implement a seeded, reproducible validation suite, with results reported
+in \Cref{sec:validation-results}, covering:
 
 \begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
 \item the resolution floor on randomly constructed contact graphs

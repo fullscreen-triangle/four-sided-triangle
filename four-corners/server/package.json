@@ -1,0 +1,36 @@
+{
+  "name": "@four-corners/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Account, source-config, and device-pairing backend for four-corners — the hosted product wrapping @four-sided-triangle/individuate.",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^9.3.1",
+    "@fastify/websocket": "^10.0.1",
+    "argon2": "^0.31.2",
+    "better-sqlite3": "^11.0.0",
+    "fastify": "^4.28.1",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}
